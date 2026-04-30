@@ -1,0 +1,29 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
+
+# Data Layers (Generados por el pipeline)
+landing/
+bronze/
+silver/
+gold/
+datos/
+evidencia/graficos/
+
+# OS
+.DS_Store
+.vscode/
