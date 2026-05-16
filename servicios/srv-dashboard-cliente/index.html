@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetailSmart // Terminal de Cliente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neon: '#00FFCC',
+            neon2: '#00FF66',
+            cyber: '#0a0a0a',
+            panel: '#111111',
+            border: '#1a2a1a',
+          },
+          fontFamily: {
+            mono: ['Fira Code', 'monospace'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          boxShadow: {
+            neon: '0 0 8px #00FFCC, 0 0 20px rgba(0,255,204,0.3)',
+            'neon-sm': '0 0 4px #00FFCC, 0 0 8px rgba(0,255,204,0.2)',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0a0a0a; color: #c0c0c0; font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #00FFCC44; }
+
+    .glitch-border {
+      border: 1px solid #00FFCC33;
+      box-shadow: 0 0 6px rgba(0,255,204,0.15);
+      transition: all 0.2s ease;
+    }
+    .glitch-border:hover {
+      border-color: #00FFCC;
+      box-shadow: 0 0 12px rgba(0,255,204,0.5), inset 0 0 6px rgba(0,255,204,0.05);
+    }
+
+    .btn-execute {
+      background: transparent;
+      border: 1px solid #00FFCC;
+      color: #00FFCC;
+      font-family: 'Fira Code', monospace;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.15s ease;
+      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+    }
+    .btn-execute::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(0,255,204,0.15), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.4s ease;
+    }
+    .btn-execute:hover::before { transform: translateX(100%); }
+    .btn-execute:hover {
+      background: rgba(0,255,204,0.08);
+      box-shadow: 0 0 16px rgba(0,255,204,0.5), inset 0 0 8px rgba(0,255,204,0.05);
+      text-shadow: 0 0 8px #00FFCC;
+    }
+    .btn-execute:active { transform: scale(0.97); }
+
+    .glitch-text {
+      text-shadow: 0 0 10px #00FFCC, 0 0 20px rgba(0,255,204,0.5);
+      color: #00FFCC;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .cursor-blink { animation: blink 1s step-end infinite; }
+
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    .scanline {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(transparent, rgba(0,255,204,0.06), transparent);
+      pointer-events: none;
+      animation: scanline 8s linear infinite;
+      z-index: 1000;
+    }
+
+    @keyframes glitch-in {
+      0% { opacity: 0; transform: translateX(-4px); }
+      50% { opacity: 0.8; }
+      100% { opacity: 1; transform: translateX(0); }
+    }
+    .log-entry { animation: glitch-in 0.2s ease forwards; }
+
+    .select-styled {
+      appearance: none;
+      background: #0a0a0a;
+      border: 1px solid #00FFCC33;
+      color: #00FFCC;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .select-styled:hover, .select-styled:focus {
+      border-color: #00FFCC;
+      box-shadow: 0 0 8px rgba(0,255,204,0.3);
+    }
+
+    .status-indicator {
+      width: 8px; height: 8px;
+      background: #00FF66;
+      box-shadow: 0 0 6px #00FF66;
+      animation: blink 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="scanline"></div>
+
+  <!-- HEADER -->
+  <header class="border-b border-neon/20 px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="status-indicator rounded-full"></div>
+      <span class="font-mono text-xs text-gray-500">SYS_ONLINE</span>
+      <span class="font-mono text-base font-bold glitch-text tracking-widest">RetailSmart</span>
+      <span class="font-mono text-xs text-gray-600">// CLIENT TERMINAL v1.0</span>
+    </div>
+    <div class="font-mono text-xs text-gray-600" id="clock"></div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- PANEL IZQUIERDO: FORMULARIO DE TRANSACCIÓN -->
+    <div class="glitch-border bg-panel p-6 space-y-6">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="font-mono text-neon text-sm font-bold">// MÓDULO DE TRANSACCIÓN</span>
+      </div>
+
+      <!-- SKU -->
+      <div>
+        <label class="font-mono text-xs text-gray-500 block mb-1">PRODUCTO (SKU)</label>
+        <select id="sku" class="select-styled w-full">
+          <option value="SKU-NB-PRO">SKU-NB-PRO &mdash; Notebook Gaming Pro X</option>
+          <option value="SKU-MON-4K">SKU-MON-4K &mdash; Monitor 4K UltraWide</option>
+          <option value="SKU-SSD-2T">SKU-SSD-2T &mdash; SSD NVMe 2TB</option>
+          <option value="SKU-KB-MECH">SKU-KB-MECH &mdash; Teclado Mecánico RGB</option>
+          <option value="SKU-HDST-PRO">SKU-HDST-PRO &mdash; Headset Wireless Pro</option>
+          <option value="SKU-GPU-RTX">SKU-GPU-RTX &mdash; GPU RTX 5090</option>
+        </select>
+      </div>
+
+      <!-- CANAL -->
+      <div>
+        <label class="font-mono text-xs text-gray-500 block mb-1">CANAL DE VENTA</label>
+        <div class="flex gap-2">
+          <button class="canal-btn flex-1 btn-execute py-2 text-xs" data-canal="web">WEB</button>
+          <button class="canal-btn flex-1 btn-execute py-2 text-xs" data-canal="app">APP</button>
+          <button class="canal-btn flex-1 btn-execute py-2 text-xs" data-canal="tienda_fisica">TIENDA</button>
+        </div>
+        <input type="hidden" id="canal" value="web" />
+      </div>
+
+      <!-- CLIENTE -->
+      <div>
+        <label class="font-mono text-xs text-gray-500 block mb-1">ID CLIENTE</label>
+        <select id="cliente" class="select-styled w-full">
+          <option value="CLI-001">CLI-001 &mdash; Bollua, A.</option>
+          <option value="CLI-002">CLI-002 &mdash; Nakamura, R.</option>
+          <option value="CLI-003">CLI-003 &mdash; Torres, M.</option>
+          <option value="CLI-004">CLI-004 &mdash; Vasquez, K.</option>
+          <option value="CLI-005">CLI-005 &mdash; Reyes, F.</option>
+        </select>
+      </div>
+
+      <!-- PRECIO -->
+      <div>
+        <label class="font-mono text-xs text-gray-500 block mb-1">PRECIO SIMULADO (CLP)</label>
+        <select id="precio" class="select-styled w-full">
+          <option value="129990">$129.990</option>
+          <option value="349990">$349.990</option>
+          <option value="89990">$89.990</option>
+          <option value="59990">$59.990</option>
+          <option value="199990">$199.990</option>
+          <option value="1999990">$1.999.990</option>
+        </select>
+      </div>
+
+      <!-- BOTÓN EXECUTE -->
+      <button id="btn-transact" class="btn-execute w-full py-4 text-sm tracking-widest">
+        ⚡ EJECUTAR TRANSACCIÓN
+      </button>
+
+      <!-- STATS RÁPIDOS -->
+      <div class="grid grid-cols-3 gap-3 pt-2 border-t border-neon/10">
+        <div class="text-center">
+          <div class="font-mono text-neon font-bold text-lg" id="stat-total">0</div>
+          <div class="font-mono text-xs text-gray-600">TX ENVIADAS</div>
+        </div>
+        <div class="text-center">
+          <div class="font-mono text-neon font-bold text-lg" id="stat-ok">0</div>
+          <div class="font-mono text-xs text-gray-600">EXITOSAS</div>
+        </div>
+        <div class="text-center">
+          <div class="font-mono text-red-500 font-bold text-lg" id="stat-err">0</div>
+          <div class="font-mono text-xs text-gray-600">ERRORES</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL DERECHO: TERMINAL DE LOGS -->
+    <div class="glitch-border bg-cyber p-6 flex flex-col" style="min-height: 500px;">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="font-mono text-neon text-sm font-bold">// TRANSACTION LOG FEED</span>
+        <button id="btn-clear" class="ml-auto font-mono text-xs text-gray-600 hover:text-neon transition-colors">[CLEAR]</button>
+      </div>
+      <!-- LOG AREA -->
+      <div id="log-terminal" class="flex-1 overflow-y-auto space-y-1 font-mono text-xs" style="max-height: 420px;">
+        <div class="text-gray-600">&gt; Sistema RetailSmart inicializado.</div>
+        <div class="text-gray-600">&gt; Esperando input del operador...<span class="cursor-blink text-neon">▮</span></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-neon/10 px-6 py-3 text-center">
+    <span class="font-mono text-xs text-gray-700">RetailSmart Chile SA // GLITCHPOINT PROTOCOL // H0P3 BI NODE ACTIVE</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

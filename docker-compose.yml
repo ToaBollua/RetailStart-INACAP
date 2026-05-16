@@ -1,0 +1,183 @@
+version: '3.8'
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # --- CAPA DE ALMACENAMIENTO - NOSQL ---
+  srv-db-mongo-primary:
+    image: bitnami/mongodb:latest
+    container_name: srv-db-mongo-primary
+    environment:
+      - MONGODB_REPLICA_SET_MODE=primary
+      - MONGODB_REPLICA_SET_NAME=rs0
+      - MONGODB_ROOT_PASSWORD=rootpass
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+    volumes:
+      - mongo_primary_data:/bitnami/mongodb
+    networks:
+      - retail_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  srv-db-mongo-replica:
+    image: bitnami/mongodb:latest
+    container_name: srv-db-mongo-replica
+    environment:
+      - MONGODB_REPLICA_SET_MODE=secondary
+      - MONGODB_REPLICA_SET_NAME=rs0
+      - MONGODB_PRIMARY_HOST=srv-db-mongo-primary
+      - MONGODB_ROOT_PASSWORD=rootpass
+      - MONGODB_REPLICA_SET_KEY=replicasetkey123
+    depends_on:
+      srv-db-mongo-primary:
+        condition: service_healthy
+    volumes:
+      - mongo_replica_data:/bitnami/mongodb
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  # --- CAPA DE ALMACENAMIENTO - SQL ---
+  srv-db-postgres-primary:
+    image: bitnami/postgresql:latest
+    container_name: srv-db-postgres-primary
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=master
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+      - POSTGRESQL_USERNAME=retail_user
+      - POSTGRESQL_PASSWORD=retail_pass
+      - POSTGRESQL_DATABASE=retail_dw
+    volumes:
+      - pg_primary_data:/bitnami/postgresql
+    networks:
+      - retail_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retail_user -d retail_dw"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  srv-db-postgres-replica:
+    image: bitnami/postgresql:latest
+    container_name: srv-db-postgres-replica
+    environment:
+      - POSTGRESQL_REPLICATION_MODE=slave
+      - POSTGRESQL_REPLICATION_USER=repl_user
+      - POSTGRESQL_REPLICATION_PASSWORD=repl_pass
+      - POSTGRESQL_MASTER_HOST=srv-db-postgres-primary
+      - POSTGRESQL_MASTER_PORT_NUMBER=5432
+    depends_on:
+      srv-db-postgres-primary:
+        condition: service_healthy
+    volumes:
+      - pg_replica_data:/bitnami/postgresql
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  # --- CAPA DE INGESTA Y PIPELINES ---
+  srv-api-backend:
+    build:
+      context: ./servicios/srv-api-backend
+    container_name: srv-api-backend
+    ports:
+      - "8000:8000"
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  srv-elt-pipeline:
+    build:
+      context: ./servicios/srv-elt-pipeline
+    container_name: srv-elt-pipeline
+    environment:
+      - MONGO_URI=mongodb://root:rootpass@srv-db-mongo-primary:27017/?replicaSet=rs0&authSource=admin
+      - API_URL=http://srv-api-backend:8000
+    depends_on:
+      srv-db-mongo-primary:
+        condition: service_healthy
+      srv-api-backend:
+        condition: service_started
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  srv-etl-pipeline:
+    build:
+      context: ./servicios/srv-etl-pipeline
+    container_name: srv-etl-pipeline
+    environment:
+      - MONGO_URI=mongodb://root:rootpass@srv-db-mongo-primary:27017/?replicaSet=rs0&authSource=admin
+      - PG_URI=postgresql://retail_user:retail_pass@srv-db-postgres-primary:5432/retail_dw
+    depends_on:
+      srv-db-mongo-primary:
+        condition: service_healthy
+      srv-db-postgres-primary:
+        condition: service_healthy
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  # --- CAPA DE CONSUMO ---
+  srv-dashboard-cliente:
+    build:
+      context: ./servicios/srv-dashboard-cliente
+    container_name: srv-dashboard-cliente
+    ports:
+      - "8080:80"
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  srv-dashboard-bi:
+    build:
+      context: ./servicios/srv-dashboard-bi
+    container_name: srv-dashboard-bi
+    ports:
+      - "8081:8000"
+    environment:
+      - PG_URI=postgresql://retail_user:retail_pass@srv-db-postgres-primary:5432/retail_dw
+    depends_on:
+      srv-db-postgres-primary:
+        condition: service_healthy
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  # --- BACKUPS ---
+  srv-cron-backup:
+    build:
+      context: ./servicios/srv-cron-backup
+    container_name: srv-cron-backup
+    depends_on:
+      srv-db-mongo-primary:
+        condition: service_healthy
+      srv-db-postgres-primary:
+        condition: service_healthy
+    volumes:
+      - ./backups:/backups
+      - mongo_primary_data:/data/mongo:ro
+      - pg_primary_data:/data/postgres:ro
+    networks:
+      - retail_network
+    logging: *default-logging
+
+networks:
+  retail_network:
+    driver: bridge
+
+volumes:
+  mongo_primary_data:
+  mongo_replica_data:
+  pg_primary_data:
+  pg_replica_data:
