@@ -9,8 +9,8 @@ from main import app, buffer
 client = TestClient(app)
 
 def test_ingest_endpoint(capsys):
-    print("\n[H0P3-TEST] INICIANDO VALIDACIÓN UNITARIA DE INGESTA (API BACKEND)")
-    print("[H0P3-TEST] Purgando buffer residual de la memoria...")
+    print("\n[RETAIL-TEST] INICIANDO VALIDACIÓN UNITARIA DE INGESTA (API BACKEND)")
+    print("[RETAIL-TEST] Purgando buffer residual de la memoria...")
     buffer.clear()
     
     tx_id = f"TX-UNIT-{int(time.time())}"
@@ -26,35 +26,35 @@ def test_ingest_endpoint(capsys):
         }
     }
     
-    print(f"[H0P3-TEST] Simulando transmisión desde Dashboard Cliente. Payload ID: {tx_id}")
+    print(f"[RETAIL-TEST] Simulando transmisión desde Dashboard Cliente. Payload ID: {tx_id}")
     response = client.post("/ingest", json=payload)
     
-    print(f"[H0P3-TEST] Respuesta del servidor recibida. Status HTTP: {response.status_code}")
+    print(f"[RETAIL-TEST] Respuesta del servidor recibida. Status HTTP: {response.status_code}")
     assert response.status_code == 200
     
     json_resp = response.json()
-    print(f"[H0P3-TEST] Analizando respuesta JSON: {json_resp}")
+    print(f"[RETAIL-TEST] Analizando respuesta JSON: {json_resp}")
     assert json_resp["status"] == "ok"
     assert json_resp["buffer_size"] == 1
     
-    print(f"[H0P3-TEST] Verificando inserción en el buffer en memoria de FastAPI...")
+    print(f"[RETAIL-TEST] Verificando inserción en el buffer en memoria de FastAPI...")
     assert len(buffer) == 1
     assert buffer[0]["id"] == tx_id
-    print("[H0P3-TEST] [EXITO] Endpoint POST /ingest validado correctamente.\n")
+    print("[RETAIL-TEST] [EXITO] Endpoint POST /ingest validado correctamente.\n")
 
 def test_get_buffer_endpoint(capsys):
-    print("\n[H0P3-TEST] INICIANDO VALIDACIÓN UNITARIA DE LECTURA (ELT POLLING)")
-    print("[H0P3-TEST] Simulando escaneo del worker ELT sobre el endpoint GET /buffer...")
+    print("\n[RETAIL-TEST] INICIANDO VALIDACIÓN UNITARIA DE LECTURA (ELT POLLING)")
+    print("[RETAIL-TEST] Simulando escaneo del worker ELT sobre el endpoint GET /buffer...")
     
     response = client.get("/buffer")
-    print(f"[H0P3-TEST] Respuesta del servidor recibida. Status HTTP: {response.status_code}")
+    print(f"[RETAIL-TEST] Respuesta del servidor recibida. Status HTTP: {response.status_code}")
     assert response.status_code == 200
     
     data = response.json().get("data", [])
-    print(f"[H0P3-TEST] Lote extraído: {len(data)} registros encolados.")
+    print(f"[RETAIL-TEST] Lote extraído: {len(data)} registros encolados.")
     assert len(data) == 1
     assert data[0]["data"]["sku"] == "SKU-MON-4K"
     
-    print("[H0P3-TEST] Verificando que el buffer se vació tras la lectura (comportamiento de cola)...")
+    print("[RETAIL-TEST] Verificando que el buffer se vació tras la lectura (comportamiento de cola)...")
     assert len(buffer) == 0
-    print("[H0P3-TEST] [EXITO] Endpoint GET /buffer validado correctamente.\n")
+    print("[RETAIL-TEST] [EXITO] Endpoint GET /buffer validado correctamente.\n")

@@ -23,6 +23,11 @@ silver/
 gold/
 datos/
 evidencia/graficos/
+data_lake/
+backups/
+.venv/
+.pytest_cache/
+audit_db.py
 
 # OS
 .DS_Store

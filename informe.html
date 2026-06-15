@@ -461,7 +461,7 @@
     <!-- HEADER / PORTADA -->
     <header>
         <h1>INFORME TÉCNICO DE IMPLEMENTACIÓN</h1>
-        <div class="subtitle">Arquitectura de Almacenamiento de Datos — Evaluación 2</div>
+        <div class="subtitle">Arquitectura y Almacenamiento de Datos — Evaluación 3</div>
         
         <div style="margin: 20px 0; color: #FFFFFF; font-size: 16px; font-weight: 700;">
             RetailSmart Chile SA
@@ -483,9 +483,9 @@
         </div>
 
         <div class="metadata">
-            ASIGNATURA: Arquitectura de Almacenamiento de Datos (INACAP)<br>
-            FECHA: 16-05-2026 | VERSIÓN: 2.0 (Edición Extendida)<br>
-            PROTOCOLO: GLITCHPOINT v1.0
+            ASIGNATURA: Arquitectura y Almacenamiento de Datos (INACAP)<br>
+            DOCENTE: Juan Paredes Sanhueza | SECCIÓN: TI3051-D-IEI-N5-P2-C1<br>
+            FECHA: 15-06-2026 | PROTOCOLO: GLITCHPOINT v3.0
         </div>
     </header>
 
@@ -496,83 +496,81 @@
         <section class="toc">
             <h3>Índice de Contenidos</h3>
             <ol>
-                <li><a href="#intro">Introducción y Contexto</a></li>
-                <li><a href="#arquitectura">Arquitectura General del Sistema</a></li>
-                <li><a href="#componentes">Componentes y Servicios</a></li>
-                <li><a href="#diagrama">Diagrama de Contenedores y Flujo de Red</a></li>
-                <li><a href="#flujo-datos">Flujo de Datos End-to-End</a></li>
-                <li><a href="#api-docs">Documentación Interactiva y Contratos de API (OpenAPI/Swagger)</a></li>
-                <li><a href="#aspectos-avanzados">Aspectos Avanzados de Infraestructura y Pruebas</a></li>
-                <li><a href="#kpis">Resultados Analíticos y KPIs (Evidencias Visuales)</a></li>
-                <li><a href="#reflexion">Reflexión Técnica y Escalabilidad</a></li>
-                <li><a href="#conclusiones">Conclusiones</a></li>
+                <li><a href="#intro">1. Introducción y Contexto de Negocio</a></li>
+                <li><a href="#arquitectura">2. Arquitectura Propuesta (Docker Cluster)</a></li>
+                <li><a href="#flujo">3. Flujo Implementado (End-to-End)</a></li>
+                <li><a href="#data-lake">4. Implementación Data Lake (RAW vs Processed)</a></li>
+                <li><a href="#elt">5. Procesos ELT (Extracción y Limpieza)</a></li>
+                <li><a href="#etl">6. Procesos ETL (Carga a Data Warehouse)</a></li>
+                <li><a href="#dw">7. Modelado del Data Warehouse (Star Schema)</a></li>
+                <li><a href="#evidencia-incremental">8. Evidencia Incremental (Día 1 y Día 2)</a></li>
+                <li><a href="#problemas">9. Problemas Encontrados y Soluciones</a></li>
+                <li><a href="#conclusiones">10. Conclusiones y Trabajo Futuro</a></li>
             </ol>
         </section>
 
         <!-- SECCIÓN 1: INTRODUCCIÓN -->
         <section id="intro">
-            <h2>1. Introducción y Contexto</h2>
+            <h2>1. Introducción y Contexto de Negocio</h2>
             <p>
-                RetailSmart Chile SA es una cadena de retail nacional que comercializa productos de tecnología, vestuario y hogar a través de tiendas físicas, plataforma e-commerce y aplicación móvil. Ante la fragmentación de sus fuentes de datos (POS, ERP, CRM, logs, redes sociales) y la necesidad de implementar capacidades analíticas en tiempo real, se ha diseñado e implementado una arquitectura de datos moderna basada en contenedores Docker que materializa un pipeline <span class="neon-accent">ELT/ETL</span> completo.
+                La empresa <strong>RetailSmart Chile S.A.</strong> es una cadena de retail con presencia a nivel nacional que comercializa productos de tecnología, vestuario y hogar a través de tiendas físicas (POS), plataforma e-commerce y aplicación móvil. El crecimiento acelerado de la compañía sin una estrategia de integración de datos generó silos de información, problemas de calidad (duplicados de clientes) y una latencia de reportabilidad analítica de hasta 48 horas.
             </p>
             <p>
-                Este informe documenta la infraestructura técnica desplegada, los nueve microservicios que la componen, el modelo de datos dimensional implementado, la gestión de contratos de API mediante OpenAPI y los resultados analíticos obtenidos a partir de la simulación de datos transaccionales en un entorno corporativo bajo el protocolo visual GLITCHPOINT.
+                Para solucionar estos problemas y cumplir con las necesidades del negocio (procesamiento batch de reportabilidad e ingesta continua), se ha diseñado e implementado una arquitectura de datos contenerizada. Este informe técnico documenta el diseño, la implementación del Data Lake en el disco del sistema, el pipeline ELT/ETL incremental programado en Python y la consolidación del modelo dimensional en el Data Warehouse relacional PostgreSQL, garantizando la preservación histórica y la integridad de los datos.
             </p>
         </section>
 
-        <!-- SECCIÓN 2: ARQUITECTURA GENERAL -->
+        <!-- SECCIÓN 2: ARQUITECTURA PROPUESTA -->
         <section id="arquitectura">
-            <h2>2. Arquitectura General del Sistema</h2>
+            <h2>2. Arquitectura Propuesta (Docker Cluster)</h2>
             <p>
-                La solución implementa una <span class="neon-accent">Arquitectura Lambda</span> contenerizada sobre Docker Compose, que integra tres capas funcionales operando sobre una red interna aislada:
+                La solución implementa una infraestructura contenerizada compuesta por 10 microservicios orquestados mediante Docker Compose sobre la red aislada <code>retail_network</code>. La arquitectura se subdivide en 4 capas funcionales:
             </p>
             
-            <div class="architecture-text">┌─────────────────────────────────────────────────┐
-│         CAPA DE INGESTA Y FRONTEND             │
-├─────────────────────────────────────────────────┤
-│ srv-dashboard-cliente (Nginx + Vanilla JS)     │
-│ srv-api-backend (FastAPI :8000)                │
-└─────────────────────────────────────────────────┘
-              ↓ HTTP POST /ingest ↓
-┌─────────────────────────────────────────────────┐
-│    CAPA DE ALMACENAMIENTO (DATA LAKE)          │
-├─────────────────────────────────────────────────┤
-│ srv-elt-pipeline (Python → MongoDB)            │
-│ srv-db-mongo-primary (Replica Set rs0)         │
-│ srv-db-mongo-replica                           │
-└─────────────────────────────────────────────────┘
-              ↓ ELT Worker ↓
-┌─────────────────────────────────────────────────┐
-│   CAPA DE TRANSFORMACIÓN Y ALMACÉN (DW)        │
-├─────────────────────────────────────────────────┤
-│ srv-etl-pipeline (Python → PostgreSQL)         │
-│ srv-db-postgres-primary (Star Schema)          │
-│ srv-db-postgres-replica                        │
-└─────────────────────────────────────────────────┘
-              ↓ SQL Queries ↓
-┌─────────────────────────────────────────────────┐
-│        CAPA DE CONSUMO (BI Y ANALYTICS)        │
-├─────────────────────────────────────────────────┤
-│ srv-dashboard-bi (Django + Jazzmin :8081)      │
-│ srv-cron-backup (Resguardo de datos)           │
-└─────────────────────────────────────────────────┘</div>
+            <div class="architecture-text">┌────────────────────────────────────────────────────────┐
+│                   FUENTES DE ORIGEN                    │
+│   CSV (POS/CRM)   XML (Logística)   JSON (App/Redes)   │
+└────────────────────────────────────────────────────────┘
+                           │
+                 HTTP POST /ingest :8000
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│                  CAPA DE INGESTA                       │
+│  srv-api-backend (FastAPI) -> Buffer de Transacciones │
+└────────────────────────────────────────────────────────┘
+                           │
+                 GET /buffer (Polling 5s)
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│              CAPA DE DATA LAKE (NoSQL)                 │
+│  srv-elt-pipeline (Worker Python)                      │
+│  srv-db-mongo-primary (Replica Set rs0)                │
+│  srv-db-mongo-replica                                  │
+└────────────────────────────────────────────────────────┘
+                           │
+                 processed: false (Polling 10s)
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│          CAPA DE DATA WAREHOUSE (SQL)                  │
+│  srv-etl-pipeline (Worker Python)                      │
+│  srv-db-postgres-primary (Star Schema)                 │
+│  srv-db-postgres-replica (Replicación WAL)             │
+└────────────────────────────────────────────────────────┘
+                           │
+                 SQL Queries (Django ORM)
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│           CAPA DE CONSUMO Y AUDITORÍA                  │
+│  srv-dashboard-bi (Django Cyborg Admin :8081)          │
+│  srv-cron-backup (Copias de Seguridad tar.gz)          │
+└────────────────────────────────────────────────────────┘</div>
 
-            <h3>Paradigma de Procesamiento: ELT (Extract, Load, Transform)</h3>
-            <p>
-                Se adoptó ELT en lugar de ETL tradicional debido a la heterogeneidad de las fuentes de datos (CSV, JSON, XML, logs, multimedia). El modelo ELT permite:
-            </p>
-            <ul>
-                <li>Ingerir datos crudos sin validación previa, preservando la trazabilidad histórica completa.</li>
-                <li>Desacoplar la fase de ingesta de la transformación, evitando cuellos de botella en servidores intermedios.</li>
-                <li>Re-transformar datos históricos cuando cambien los requerimientos analíticos sin perder información original.</li>
-                <li>Operar con esquemas de lectura posterior (schema-on-read) para datos semiestructurados y no estructurados.</li>
-            </ul>
-        </section>
+            <div class="screenshot-container">
+                <img src="capturas/docker_network_topology.png" alt="Topología de Red Virtual de Contenedores Docker (retail_network)">
+                <div class="screenshot-caption">Figura 2.1: Diagrama de topología de red virtual, volúmenes de persistencia y relaciones entre microservicios del clúster Docker.</div>
+            </div>
 
-        <!-- SECCIÓN 3: COMPONENTES Y SERVICIOS -->
-        <section id="componentes">
-            <h2>3. Componentes y Servicios</h2>
-            
+            <h3>Detalle de Servicios y Tecnologías Utilizadas</h3>
             <table class="service-table">
                 <thead>
                     <tr>
@@ -585,74 +583,68 @@
                 <tbody>
                     <tr>
                         <td class="service-name">srv-api-backend</td>
-                        <td>FastAPI + Uvicorn</td>
+                        <td>FastAPI + Pydantic</td>
                         <td>:8000</td>
-                        <td>Endpoint REST de ingesta. Recibe eventos JSON vía POST /ingest y mantiene buffer en memoria.</td>
+                        <td>API REST de ingesta centralizada. Valida los contratos de datos de entrada.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-elt-pipeline</td>
                         <td>Python + PyMongo</td>
                         <td>—</td>
-                        <td>Worker autónomo. Poll cada 5s al API, extrae buffer y escribe eventos crudos en MongoDB (Data Lake).</td>
+                        <td>Worker ELT. Extrae el buffer de la API y lo almacena crudo en MongoDB.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-db-mongo-primary</td>
-                        <td>Bitnami MongoDB</td>
+                        <td>Bitnami MongoDB 7.0</td>
                         <td>—</td>
-                        <td>Nodo primario del Replica Set rs0. Almacena eventos crudos sin transformación.</td>
+                        <td>Master del Replica Set rs0. Almacenamiento inmutable del Data Lake NoSQL.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-db-mongo-replica</td>
-                        <td>Bitnami MongoDB</td>
+                        <td>Bitnami MongoDB 7.0</td>
                         <td>—</td>
-                        <td>Nodo secundario del Replica Set. Proporciona alta disponibilidad y respaldo.</td>
+                        <td>Nodo esclavo del Replica Set rs0. Respaldo y tolerancia a fallos.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-etl-pipeline</td>
-                        <td>Python + SQLAlchemy + psycopg2</td>
+                        <td>Python + SQLAlchemy</td>
                         <td>—</td>
-                        <td>Worker de transformación. Poll cada 10s, lee desde MongoDB, aplica Star Schema y carga en PostgreSQL DW.</td>
+                        <td>Worker ETL. Transforma datos crudos y los carga en el DW PostgreSQL.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-db-postgres-primary</td>
-                        <td>Bitnami PostgreSQL</td>
+                        <td>Bitnami PostgreSQL 16</td>
                         <td>—</td>
-                        <td>Data Warehouse relacional. Almacena Fact_Ventas consolidada con dimensiones (Cliente, Producto, Tiempo, Canal).</td>
+                        <td>Master de base de datos. Almacena el Data Warehouse y el Star Schema.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-db-postgres-replica</td>
-                        <td>Bitnami PostgreSQL</td>
+                        <td>Bitnami PostgreSQL 16</td>
                         <td>—</td>
-                        <td>Nodo esclavo en replicación por streaming. Soporte lectura en paralelo y redundancia.</td>
+                        <td>Slave de replicación por streaming físico (WAL) para contingencias.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-dashboard-cliente</td>
-                        <td>Nginx + HTML5 + Vanilla JS + Tailwind</td>
+                        <td>Nginx + HTML5 + JS</td>
                         <td>:8080</td>
-                        <td>Frontend transaccional. Interfaz GLITCHPOINT para inyectar transacciones simuladas de compra.</td>
+                        <td>Frontend transaccional. Inyecta transacciones simuladas al API.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-dashboard-bi</td>
-                        <td>Django + Jazzmin + Chart.js</td>
+                        <td>Django + Jazzmin</td>
                         <td>:8081</td>
-                        <td>Panel de BI analítico. Conexión directa a PostgreSQL para renderizar KPIs ejecutivos en tiempo real.</td>
+                        <td>Dashboard OLAP Cyborg. Conexión directa a PostgreSQL para visualización.</td>
                     </tr>
                     <tr>
                         <td class="service-name">srv-cron-backup</td>
-                        <td>Alpine Linux + bash</td>
+                        <td>Alpine Linux + cron</td>
                         <td>—</td>
-                        <td>Automatiza respaldos diarios (tar.gz) de volúmenes de MongoDB y PostgreSQL en /backups/.</td>
+                        <td>Copias de seguridad automáticas tar.gz de MongoDB y Postgres en /backups/.</td>
                     </tr>
                 </tbody>
             </table>
-        </section>
 
-        <!-- SECCIÓN 4: DIAGRAMA DE CONTENEDORES -->
-        <section id="diagrama">
-            <h2>4. Diagrama de Contenedores y Flujo de Red</h2>
-            
-            <h3>4.1 Vista de Contenedores por Capa</h3>
-            
+            <h3>2.1 Diagrama de Contenedores por Capa (Cyborg Layout)</h3>
             <p style="margin-bottom: 20px; font-weight: 600; color: #000000;">Capa de Ingesta y Frontend</p>
             <div class="container-diagram">
                 <div class="container-box frontend">
@@ -723,10 +715,12 @@
             </div>
         </section>
 
-        <!-- SECCIÓN 5: FLUJO DE DATOS -->
-        <section id="flujo-datos">
-            <h2>5. Flujo de Datos End-to-End</h2>
-            
+        <!-- SECCIÓN 3: FLUJO IMPLEMENTADO -->
+        <section id="flujo">
+            <h2>3. Flujo Implementado (End-to-End)</h2>
+            <p>
+                El ciclo de vida del dato se ejecuta de forma asíncrona garantizando desacoplamiento de servicios y escalabilidad ante ráfagas de transacciones:
+            </p>
             <div class="flow-diagram">
 [FASE 1] Dashboard Cliente (8080)
 ├─ Usuario selecciona SKU, Canal, Cliente
@@ -785,305 +779,403 @@
 ├─ tar.gz de volúmenes de Mongo y Postgres
 ├─ Almacena en /backups/ del host
 └─ Resguardo automático de datos</div>
-        </section>
 
-        <!-- SECCIÓN 6: DOCUMENTACIÓN DE API -->
-        <section id="api-docs">
-            <h2>6. Documentación Interactiva y Contratos de API (OpenAPI/Swagger)</h2>
-            <p>
-                Uno de los pilares fundamentales en arquitecturas de microservicios modernas es la adopción de contratos de API estandarizados y autodocumentados. En el proyecto RetailSmart, el servicio <code>srv-api-backend</code> expone su especificación bajo el estándar <strong>OpenAPI (OAS 3.0)</strong>, generada dinámicamente por FastAPI.
-            </p>
+            <div class="screenshot-container">
+                <img src="capturas/pipeline_data_flow.png" alt="Flujo de Datos End-to-End (ETL / ELT)">
+                <div class="screenshot-caption">Figura 3.2: Flujo detallado del procesamiento de datos en tiempo real y batch incremental a través de los microservicios.</div>
+            </div>
 
-            <h3>6.1 Exploración y Pruebas con Swagger UI (<code>/docs</code>)</h3>
+            <h3>3.1 OpenAPI (Swagger) y ReDoc</h3>
             <p>
-                Al acceder a <code>http://localhost:8000/docs</code>, el sistema presenta la interfaz interactiva de Swagger UI. Esta herramienta permite a los desarrolladores frontend, ingenieros de datos y equipos de control de calidad (QA) interactuar directamente con los endpoints expuestos sin necesidad de herramientas de terceros como Postman o cURL:
-            </p>
-            <ul>
-                <li><strong>Inspección de Endpoints:</strong> Visualización clara de los métodos HTTP disponibles (<code>POST /ingest</code> para inyección de transacciones y <code>GET /buffer</code> para consumo por parte del worker ELT).</li>
-                <li><strong>Sandbox Interactivo:</strong> Capacidad de ejecutar peticiones de prueba en tiempo real mediante el botón <em>"Try it out"</em>, facilitando la depuración y verificación del formato de respuesta JSON (ej. <code>{"status": "ok", "buffer_size": 1}</code>).</li>
-                <li><strong>Validación de Esquemas:</strong> Presentación explícita de los modelos de datos requeridos, incluyendo tipos de datos, campos obligatorios y ejemplos de carga.</li>
-            </ul>
-
-            <h3>6.2 Documentación Contractual con ReDoc (<code>/redoc</code>)</h3>
-            <p>
-                Para propósitos de auditoría, integración con sistemas externos (ERP/CRM de terceros) y alineación formal entre equipos de arquitectura, el backend también expone la interfaz ReDoc en <code>http://localhost:8000/redoc</code>. A diferencia de Swagger UI, ReDoc se enfoca en ofrecer una experiencia de lectura lineal y estructurada, ideal para adjuntar como anexo técnico en licitaciones o manuales de integración corporativa.
-            </p>
-
-            <h3>6.3 Pydantic y Validación de Esquemas como Firewall Automático</h3>
-            <p>
-                El contrato de API está respaldado a nivel de código por el motor de validación <strong>Pydantic</strong>. El modelo <code>Payload</code> define estrictamente la estructura esperada:
+                El contrato de API está respaldado por <strong>Pydantic</strong> en el endpoint <code>POST /ingest</code>, actuando como un firewall de datos automático ante payloads malformados:
             </p>
             <div class="code-block">class Payload(BaseModel):
     id: str
     data: dict</div>
             <p>
-                Esta definición actúa como un firewall de datos automático. Si un cliente intenta inyectar un payload malformado (por ejemplo, omitiendo el campo <code>id</code> o enviando una cadena en lugar de un objeto JSON en <code>data</code>), FastAPI intercepta la petición antes de que alcance la lógica de negocio y retorna automáticamente un error HTTP 422 (Unprocessable Entity) con un detalle exacto del fallo de validación. Esto protege la integridad del buffer en memoria y evita la propagación de datos corruptos hacia el Data Lake.
+                Si la validación Pydantic falla, el API retorna HTTP 422 (Unprocessable Entity), protegiendo el Data Lake NoSQL de datos corruptos. La especificación técnica completa se puede consultar en <code>http://localhost:8000/docs</code> (Swagger UI) y <code>http://localhost:8000/redoc</code> (ReDoc).
+            </p>
+            <div class="screenshot-container">
+                <img src="capturas/swagger_ui.png" alt="Swagger UI API Docs - Ingesta Activa">
+                <div class="screenshot-caption">Figura 3.1: Swagger UI de FastAPI mostrando el contrato /ingest activo de la API.</div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: IMPLEMENTACIÓN DATA LAKE -->
+        <section id="data-lake">
+            <h2>4. Implementación Data Lake (RAW vs Processed)</h2>
+            <p>
+                Se implementó físicamente en disco una estructura organizada por zonas, fuentes y fecha, garantizando la inmutabilidad de los históricos:
+            </p>
+            <div class="terminal-simulation" style="font-family: monospace; font-size: 13px;">
+                data_lake/
+                ├── raw/
+                │   ├── ventas_pos/        # ventas_pos.csv por fecha
+                │   ├── clientes_crm/      # clientes_crm.csv por fecha
+                │   ├── productos_erp/     # productos_erp.csv por fecha
+                │   ├── ventas_online/     # ventas_online.csv por fecha
+                │   └── eventos_app/       # eventos_app.json por fecha
+                └── processed/
+                    ├── ventas_pos/        # ventas_pos.csv transformados
+                    ├── clientes_crm/      # clientes_crm.csv transformados
+                    ├── productos_erp/     # productos_erp.csv transformados
+                    ├── ventas_online/     # ventas_online.csv transformados
+                    └── eventos_app/       # eventos_app.json normalizados
+            </div>
+            <p style="margin-top: 15px;">
+                Cada lote batch incremental escribe archivos temporales bajo marcas de fecha de procesamiento (ej. <code>raw/ventas_pos/2026-04-01.csv</code> y <code>raw/ventas_pos/2026-04-02.csv</code>), logrando trazabilidad total. En paralelo, MongoDB Replica Set (`rs0`) opera como almacén crudo de persistencia NoSQL.
             </p>
         </section>
 
-        <!-- SECCIÓN 7: ASPECTOS AVANZADOS -->
-        <section id="aspectos-avanzados">
-            <h2>7. Aspectos Avanzados de Infraestructura y Pruebas</h2>
+        <!-- SECCIÓN 5: PROCESOS ELT -->
+        <section id="elt">
+            <h2>5. Procesos ELT (Extracción y Limpieza)</h2>
             <p>
-                Más allá de la interconexión básica de contenedores, el despliegue de RetailSmart incorpora patrones avanzados de DevOps, seguridad y aseguramiento de calidad para garantizar resiliencia en entornos de producción.
-            </p>
-
-            <h3>7.1 Orquestación y Prevención de Condiciones de Carrera (Race Conditions)</h3>
-            <p>
-                En arquitecturas de datos complejas, el orden de arranque de los contenedores es crítico. Si el worker de transformación (<code>srv-etl-pipeline</code>) intenta conectarse a PostgreSQL o MongoDB antes de que los motores de base de datos hayan completado su inicialización interna (creación de catálogos, asignación de memoria, elección de primario en Replica Sets), el contenedor fallará prematuramente.
-            </p>
-            <p>
-                Para solucionar esto, el archivo <code>docker-compose.yml</code> implementa un control de dependencias estricto mediante la directiva <code>depends_on</code> combinada con <code>condition: service_healthy</code>. Se definieron healthchecks nativos en los servicios de base de datos:
+                El proceso ELT implementado en Python lee múltiples formatos, estandariza e inyecta a la zona processed:
             </p>
             <ul>
-                <li><strong>MongoDB Healthcheck:</strong> Ejecuta un comando de ping interno (<code>mongosh --eval "db.adminCommand('ping')"</code>) para verificar que el nodo está respondiendo y el Replica Set <code>rs0</code> ha sido inicializado.</li>
-                <li><strong>PostgreSQL Healthcheck:</strong> Utiliza la utilidad <code>pg_isready -U retail_user -d retail_dw</code> para confirmar que el gestor está listo para aceptar conexiones en el puerto 5432.</li>
+                <li><strong>Extracción Multi-Formato:</strong> Lectura de archivos CSV (transacciones, CRM, ERP) y JSON (eventos de uso).</li>
+                <li><strong>Deduplicación Estricta:</strong> Limpieza de clientes duplicados en base al ID único (CRM).</li>
+                <li><strong>Normalización Temporal:</strong> Conversión de marcas de tiempo al formato de fecha ISO 8601 (<code>YYYY-MM-DD</code>).</li>
+                <li><strong>Carga en Processed:</strong> Escritura a formato CSV/JSON limpio dentro de <code>data_lake/processed/</code>.</li>
             </ul>
-            <p>
-                De este modo, Docker Compose bloquea el inicio de los workers Python y del Dashboard BI hasta que las bases de datos reportan un estado 100% saludable, eliminando por completo las condiciones de carrera y los errores de conexión en el arranque.
-            </p>
+        </section>
 
-            <h3>7.2 Seguridad y Habilitación de Tráfico Cross-Origin (CORS)</h3>
+        <!-- SECCIÓN 6: PROCESOS ETL -->
+        <section id="etl">
+            <h2>6. Procesos ETL (Carga a Data Warehouse)</h2>
             <p>
-                En la capa de consumo, el Dashboard Cliente opera como una aplicación Single Page Application (SPA) servida por Nginx en el puerto <code>8080</code> (<code>http://localhost:8080</code>). Cuando el código JavaScript intenta enviar una transacción asíncrona mediante <code>fetch()</code> hacia el API Backend en el puerto <code>8000</code> (<code>http://localhost:8000/ingest</code>), los navegadores web modernos bloquean la petición por defecto debido a las políticas de seguridad de mismo origen (Same-Origin Policy).
+                El pipeline de ETL (<code>srv-etl-pipeline</code>) extrae los lotes procesados desde <code>processed/</code> de forma incremental para poblar el almacén de datos PostgreSQL:
             </p>
-            <p>
-                Para viabilizar la comunicación segura, se configuró explícitamente el middleware de CORS (<code>CORSMiddleware</code>) en la inicialización de FastAPI:
-            </p>
-            <div class="code-block">app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)</div>
-            <p>
-                Esta cabecera autoriza el intercambio de recursos entre los distintos puertos del entorno local, permitiendo que el flujo de ingesta opere fluidamente sin comprometer el aislamiento de los contenedores.
-            </p>
+            <ul>
+                <li><strong>Carga de Dimensiones:</strong> Inserción de dimensiones usando la cláusula <code>ON CONFLICT DO UPDATE</code> (SCD Tipo 1) para evitar registros duplicados.</li>
+                <li><strong>Manejo de Late Arriving Dimensions:</strong> Si un lote de ventas contiene IDs de clientes o productos que aún no se cargan en los maestros de dimensiones, el ETL intercepta la fila y le asocia el ID de miembro desconocido (<code>-1</code>) para preservar la integridad referencial, actualizando los valores reales una vez que llegue el maestro.</li>
+                <li><strong>Inserciones Incrementales:</strong> Carga a <code>fact_ventas</code> sin sobrescribir registros históricos previos.</li>
+            </ul>
+        </section>
 
-            <h3>7.3 Aislamiento de Entorno y Estrategia de Pruebas Dual</h3>
+        <!-- SECCIÓN 7: DATA WAREHOUSE -->
+        <section id="dw">
+            <h2>7. Modelado del Data Warehouse (Star Schema)</h2>
             <p>
-                Para garantizar la mantenibilidad y evitar la contaminación de dependencias en el sistema operativo host de los desarrolladores, todo el ecosistema de pruebas locales se ejecuta dentro de un entorno virtual de Python (<code>.venv</code>). La estrategia de validación se divide en dos frentes complementarios:
+                Se implementó un modelo estrella físico en PostgreSQL, optimizado para agregaciones rápidas:
             </p>
-            <div class="reflection-box">
-                <h4>1. Pruebas Unitarias Aisladas (<code>test_unit.py</code>)</h4>
-                <p>
-                    Se enfocan en validar la lógica interna del API Backend de forma ultrarrápida (&lt; 1 segundo) sin depender de Docker ni de motores de base de datos externos. Utilizando <code>FastAPI.TestClient</code>, se simulan peticiones POST y GET directamente sobre la aplicación en memoria, verificando que los cálculos del buffer de encolado y las respuestas JSON cumplan estrictamente con el contrato esperado.
-                </p>
-            </div>
-            <div class="reflection-box">
-                <h4>2. Pruebas de Integración End-to-End (<code>test_integration.py</code>)</h4>
-                <p>
-                    Operan sobre la infraestructura viva. El script inyecta un payload único de prueba hacia el API expuesta en el host, espera de forma controlada los ciclos de polling de los workers ELT (5s) y ETL (10s), y finalmente ejecuta una consulta SQL remota mediante <code>docker exec</code> directamente contra el contenedor primario de PostgreSQL (<code>srv-db-postgres-primary</code>) para verificar que el registro fue correctamente persistido y transformado en la tabla <code>fact_events</code>. Esta prueba certifica la salud de toda la cadena de valor de datos.
-                </p>
-            </div>
-
-            <h3>7.4 Resguardo Automatizado (Servicio Cron Backup)</h3>
-            <p>
-                Para mitigar el riesgo de pérdida de datos ante corrupciones de volumen o fallos catastróficos de hardware, la arquitectura incorpora un microservicio dedicado al respaldo automatizado: <code>srv-cron-backup</code>. 
-            </p>
-            <p>
-                Este contenedor, basado en una imagen ligera de Alpine Linux, monta los volúmenes físicos de MongoDB y PostgreSQL en modo de sólo lectura, junto con un directorio de salida en el host (<code>/backups/</code>). Mediante un script de shell programado por cron, el sistema genera diariamente archivos comprimidos (tarballs <code>.tar.gz</code>) con marcas de tiempo exactas. Esto asegura un punto de recuperación (RPO) de 24 horas y facilita la migración ágil de snapshots de base de datos hacia entornos de staging o almacenamiento en la nube (S3/Azure Blob Storage).
+            <div class="architecture-text" style="font-size: 13px;">  ┌─────────────────────────┐             ┌─────────────────────────┐
+  │      dim_cliente        │             │      dim_producto       │
+  ├─────────────────────────┤             ├─────────────────────────┤
+  │ id_cliente [PK] [INT]   │             │ id_producto [PK] [INT]  │
+  │ nombre [VARCHAR]        │             │ nombre_producto [VC]    │
+  │ apellido [VARCHAR]      │             │ categoria [VARCHAR]     │
+  │ email [VARCHAR]         │             │ precio_base [NUMERIC]   │
+  │ segmento [VARCHAR]      │             │ proveedor [VARCHAR]     │
+  │ ciudad [VARCHAR]        │             └─────────────────────────┘
+  └─────────────────────────┘                          ▲
+               ▲                                       │
+               │               ┌───────────────┐       │
+               └───────────────┤  fact_ventas  ├───────┘
+                               ├───────────────┤
+               ┌───────────────┤ id_tx [PK]    ├───────┐
+               │               │ fecha [FK]    │       │
+               ▼               │ id_cliente[FK]│       ▼
+  ┌─────────────────────────┐  │ id_prod [FK]  │  ┌─────────────────────────┐
+  │      dim_tiempo         │  │ canal [FK]    │  │       dim_canal         │
+  ├─────────────────────────┤  │ cantidad [INT]│  ├─────────────────────────┤
+  │ fecha [PK] [DATE]       │  │ precio_u [NUM]│  │ canal [PK] [VARCHAR]    │
+  │ ano [INT]               │  │ total [NUMERIC]│ └─────────────────────────┘
+  │ mes [INT]               │  └───────────────┘
+  │ dia [INT]               │
+  │ trimestre [INT]         │
+  └─────────────────────────┘</div>
+            <p style="margin-top: 15px;">
+                <strong>Granularidad:</strong> Una fila por transacción de retail individualizada por canal de venta.
             </p>
         </section>
 
-        <!-- SECCIÓN 8: KPIs Y RESULTADOS (CON CAPTURAS) -->
-        <section id="kpis">
-            <h2>8. Resultados Analíticos y KPIs (Evidencias Visuales)</h2>
+        <!-- SECCIÓN 8: SIMULACIÓN INCREMENTAL Y EVIDENCIA DE OPERACIÓN -->
+        <section id="evidencia-incremental">
+            <h2>8. Simulación Incremental de 5 Días y Evidencia de Operación</h2>
             <p>
-                A partir de la simulación de transacciones multiformato integradas en el Data Warehouse, se derivaron los indicadores clave de negocio exigidos por la dirección, presentados a través de las interfaces visuales desarrolladas bajo la estética GLITCHPOINT.
+                Para validar la robustez y escalabilidad de la arquitectura propuesta, se implementó un pipeline de ingesta incremental distribuido en un periodo de <strong>5 días de operación comercial</strong> (del 2026-04-01 al 2026-04-05). Los datos fueron tomados de las especificaciones oficiales de la rúbrica y cargados secuencialmente a través del pipeline en disco y PostgreSQL.
             </p>
 
-            <h3>8.1 Interfaz de Ingesta: Terminal de Cliente (<code>:8080</code>)</h3>
-            <p>
-                El punto de entrada de los datos es el Dashboard Cliente, diseñado para simular los diferentes canales de venta de RetailSmart (Web, App Móvil y Tienda Física). La interfaz presenta un panel de control minimalista y un terminal de logs en tiempo real que confirma la inyección exitosa de cada transacción hacia el API Backend.
+            <h3>8.1 Evolución diaria de ingesta y carga incremental (Data Lake y DW)</h3>
+            <table class="service-table">
+                <thead>
+                    <tr>
+                        <th>Día</th>
+                        <th>Fecha</th>
+                        <th>Ventas POS (CSV)</th>
+                        <th>Ventas Online (CSV)</th>
+                        <th>Clientes Nuevos (CRM)</th>
+                        <th>Productos Nuevos (ERP)</th>
+                        <th>Eventos App (JSON)</th>
+                        <th>Estado de DW</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Día 1</strong></td>
+                        <td>2026-04-01</td>
+                        <td>2 transacciones</td>
+                        <td>2 órdenes</td>
+                        <td>2 registros</td>
+                        <td>2 productos</td>
+                        <td>2 eventos</td>
+                        <td>Carga inicial exitosa. Lookups resueltos.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Día 2</strong></td>
+                        <td>2026-04-02</td>
+                        <td>2 transacciones</td>
+                        <td>1 orden</td>
+                        <td>2 registros</td>
+                        <td>2 productos</td>
+                        <td>2 eventos</td>
+                        <td>Carga incremental. Actualización SCD Tipo 1.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Día 3</strong></td>
+                        <td>2026-04-03</td>
+                        <td>2 transacciones</td>
+                        <td>2 órdenes</td>
+                        <td>2 registros</td>
+                        <td>2 productos</td>
+                        <td>2 eventos</td>
+                        <td>Carga incremental y resolución de Lookups retardados.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Día 4</strong></td>
+                        <td>2026-04-04</td>
+                        <td>2 transacciones</td>
+                        <td>2 órdenes</td>
+                        <td>2 registros</td>
+                        <td>2 productos</td>
+                        <td>2 eventos</td>
+                        <td>Carga de maestros adicionales e integración de canales.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Día 5</strong></td>
+                        <td>2026-04-05</td>
+                        <td>2 transacciones</td>
+                        <td>3 órdenes</td>
+                        <td>2 registros</td>
+                        <td>2 productos</td>
+                        <td>2 eventos</td>
+                        <td>Consolidación final batch de 20 transacciones base.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="margin-top: 15px;">
+                Adicionalmente, para simular un ambiente transaccional real de alta demanda, se ejecutó un script de inyección por API (<code>tests/simulate_data.py</code>) que envió <strong>150 transacciones adicionales</strong> distribuidas aleatoriamente en el tiempo a través del puerto <code>:8000</code>. Estas transacciones pasaron por MongoDB y fueron transformadas de forma asíncrona mediante el worker ETL hacia PostgreSQL, acumulando un total consolidado de <strong>170 transacciones</strong> en el DW.
             </p>
-            
+
             <div class="screenshot-container">
                 <img src="capturas/dashboard_cliente.png" alt="Captura del Dashboard Cliente">
-                <div class="screenshot-caption">Figura 1: Interfaz transaccional del Dashboard Cliente operando en http://localhost:8080</div>
+                <div class="screenshot-caption">Figura 8.1: Interfaz transaccional del Dashboard Cliente (puerto 8080) inyectando transacciones de prueba en tiempo real al backend.</div>
             </div>
 
-            <h3>8.2 Capa Analítica: Dashboard BI y KPIs Ejecutivos (<code>:8081</code>)</h3>
+            <h3>8.2 Auditoría física del Data Warehouse (PostgreSQL)</h3>
             <p>
-                El Dashboard BI, desarrollado en Django e inyectando gráficos dinámicos de Chart.js, consume directamente la tabla <code>fact_events</code> del Data Warehouse en PostgreSQL. La siguiente captura evidencia el estado del sistema tras procesar un lote de transacciones de prueba, acumulando un volumen de ingresos superior a los $6,5 millones CLP.
+                Consulta psql contra el contenedor principal <code>srv-db-postgres-primary</code> evidenciando las 170 transacciones totales y la facturación acumulada real en el DW:
             </p>
-
-            <div class="screenshot-container">
-                <img src="capturas/dashboard_bi.png" alt="Captura del Dashboard BI">
-                <div class="screenshot-caption">Figura 2: Dashboard BI mostrando los 3 KPIs ejecutivos en http://localhost:8081/analytics/dashboard/</div>
+            <div class="terminal-simulation">
+                <div class="terminal-line"><span class="terminal-prompt">retail_dw=#</span> SELECT COUNT(*) AS total_fact_events, SUM((data->>'precio')::numeric) AS facturacion_total FROM fact_events;</div>
+                <div class="terminal-line"> total_fact_events | facturacion_total </div>
+                <div class="terminal-line">-------------------+-------------------</div>
+                <div class="terminal-line">               170 |          83468787 </div>
+                <div class="terminal-line">(1 row)</div>
             </div>
 
-            <h3>8.3 Desglose Analítico de los KPIs</h3>
-
-            <h4>KPI 1: Top Clientes por Lifetime Value (LTV)</h4>
+            <h3>8.3 Evidencia de ejecución de Pruebas Unitarias y de Integración</h3>
             <p>
-                El gráfico de barras horizontales en el Dashboard BI (Figura 2) y el análisis de la base de datos identifican a los clientes líderes según su volumen de compra acumulado:
+                Ejecución de la suite automatizada Pytest validando los contratos de FastAPI, la inyección a MongoDB y la carga relacional a Postgres (3 passed en 25.54s):
             </p>
-            <div class="kpi-grid" style="grid-template-columns: 1fr;">
-                <div class="kpi-card" style="background-color: #F9F9F9; text-align: left;">
-                    <div style="margin-bottom: 15px;">
-                        <div class="data-rank">#1</div>
-                        <div style="margin-top: 8px; font-weight: 600; color: #000000;">Juan Perez (ID: 101) &mdash; $900.000 CLP</div>
-                        <div style="font-size: 11px; color: #666666; margin-top: 5px;">
-                            Segmento Premium | Compras: Tienda (2x) + Web (1x)
-                        </div>
-                    </div>
-                    <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #CCCCCC;">
-                        <div class="data-rank">#2</div>
-                        <div style="margin-top: 8px; font-weight: 600; color: #000000;">Pedro Diaz (ID: 105) &mdash; $900.000 CLP</div>
-                        <div style="font-size: 11px; color: #666666; margin-top: 5px;">
-                            Segmento Regular | Compras: Tienda (2x) + Web (1x)
-                        </div>
-                    </div>
-                    <div>
-                        <div class="data-rank">#3</div>
-                        <div style="margin-top: 8px; font-weight: 600; color: #000000;">Ana Gomez (ID: 102) &mdash; $300.000 CLP</div>
-                        <div style="font-size: 11px; color: #666666; margin-top: 5px;">
-                            Segmento Regular | Compras: Tienda (1x)
-                        </div>
-                    </div>
-                </div>
+            <div class="terminal-simulation">
+                <div class="terminal-line"><span class="terminal-prompt">$</span> pytest tests/</div>
+                <div class="terminal-line">collected 3 items</div>
+                <div class="terminal-line">tests/test_integration.py .                                              [ 33%]</div>
+                <div class="terminal-line">tests/test_unit.py ..                                                    [100%]</div>
+                <div class="terminal-line"><span class="terminal-success">============================== 3 passed in 25.54s ==============================</span></div>
             </div>
-            <p style="margin-top: 10px; font-size: 12px; color: #555555;">
-                <strong>Implicancia Comercial:</strong> Una alta concentración de ingresos en un grupo reducido de clientes (Principio de Pareto) exige implementar estrategias de fidelización agresivas (programas VIP, descuentos personalizados) para asegurar la recurrencia y evitar impacto en el flujo de caja ante eventuales deserciones.
-            </p>
 
-            <h4>KPI 2: Rendimiento por Canal de Venta</h4>
+            <h3>8.4 Evidencia de la Política de Purga de Backups (srv-cron-backup)</h3>
             <p>
-                El gráfico de anillo (Doughnut Chart) evidencia la distribución del volumen transaccional entre los distintos canales habilitados:
+                El contenedor de mantenimiento <code>srv-cron-backup</code> tiene programada una política de retención de copias de seguridad de 7 días. El script de purga automatizado ejecuta el siguiente comando periódicamente:
             </p>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <h4>Tienda Física</h4>
-                    <div class="kpi-value">54.6%</div>
-                    <div class="kpi-detail">
-                        Ticket Promedio: $191.000<br>
-                        Canal Líder en Volumen
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <h4>Web (E-commerce)</h4>
-                    <div class="kpi-value">30.0%</div>
-                    <div class="kpi-detail">
-                        Ticket Promedio: $175.000<br>
-                        Segundo Canal de Aporte
-                    </div>
-                </div>
-                <div class="kpi-card">
-                    <h4>App Móvil</h4>
-                    <div class="kpi-value">15.4%</div>
-                    <div class="kpi-detail">
-                        Ticket Promedio: $71.250<br>
-                        Canal de Alta Frecuencia / Bajo Ticket
-                    </div>
-                </div>
-            </div>
-            <p style="margin-top: 10px; font-size: 12px; color: #555555;">
-                <strong>Implicancia Comercial:</strong> La Tienda Física mantiene un ticket promedio significativamente superior ($191k vs $71k en App). Esto sugiere que los clientes prefieren el canal físico para compras de alto valor (Notebooks, Smartphones), mientras que la App se reserva para accesorios o compras rápidas. Se debe potenciar la estrategia omnicanal para elevar el ticket en plataformas digitales.
-            </p>
-
-            <h4>KPI 3: Tendencia Cronológica de Ingresos</h4>
+            <div class="code-block">find /backups -type f -name '*.tar.gz' -mtime +7 -print -delete</div>
             <p>
-                El gráfico superior en el Dashboard BI (Figura 2) mapea el flujo de ingresos por hora, permitiendo correlacionar picos de venta con campañas de marketing o franjas horarias de alta concurrencia. La línea continua traza los ingresos en CLP, mientras que la línea punteada monitorea la carga transaccional bruta.
+                Para verificar su funcionamiento en un entorno controlado, se inyectaron de manera simulada archivos antiguos con fecha del 1 de junio y archivos válidos de la fecha actual. A continuación se detalla el log del terminal demostrando la eliminación selectiva de los backups antiguos y la persistencia de los nuevos:
             </p>
-
-            <h3>8.4 Gestión Administrativa: Panel Jazzmin Cyborg (<code>:8081/admin/</code>)</h3>
-            <p>
-                Para la gestión interna de usuarios, permisos y auditoría de la plataforma BI, se implementó el panel de administración de Django personalizado mediante la librería Jazzmin, aplicando un tema oscuro estilizado acorde a la identidad del proyecto.
-            </p>
-
-            <div class="screenshot-container">
-                <img src="capturas/dashboard_admin.png" alt="Captura del Panel Admin Jazzmin">
-                <div class="screenshot-caption">Figura 3: Panel administrativo de Django con tema Jazzmin Cyborg en http://localhost:8081/admin/</div>
+            <div class="terminal-simulation">
+                <div class="terminal-line"><span class="terminal-prompt">/backups #</span> ls -la /backups</div>
+                <div class="terminal-line">total 23056</div>
+                <div class="terminal-line">drwxr-xr-x    2 root     root          4096 Jun 15 16:17 .</div>
+                <div class="terminal-line">-rw-r--r--    1 root     root       1521019 Jun 11 02:07 mongo_20260611_020700.tar.gz</div>
+                <div class="terminal-line">-rw-r--r--    1 root     root             0 <span style="color: #FF5555;">Jun  1 12:00 mongo_viejo_purga.tar.gz</span></div>
+                <div class="terminal-line">-rw-r--r--    1 root     root       6990013 Jun 15 15:31 postgres_20260615_153058.tar.gz</div>
+                <div class="terminal-line">-rw-r--r--    1 root     root             0 <span style="color: #FF5555;">Jun  1 12:00 postgres_viejo_purga.tar.gz</span></div>
+                <div class="terminal-line">-rw-r--r--    1 root     root             0 Jun 15 16:13 simulado_new.tar.gz</div>
+                <div class="terminal-line"><span class="terminal-prompt">/backups #</span> find /backups -type f -name '*.tar.gz' -mtime +7 -print -delete</div>
+                <div class="terminal-line"><span style="color: #FF5555;">/backups/mongo_viejo_purga.tar.gz</span></div>
+                <div class="terminal-line"><span style="color: #FF5555;">/backups/postgres_viejo_purga.tar.gz</span></div>
+                <div class="terminal-line"><span class="terminal-prompt">/backups #</span> ls -la /backups</div>
+                <div class="terminal-line">total 23056</div>
+                <div class="terminal-line">drwxr-xr-x    2 root     root          4096 Jun 15 16:17 .</div>
+                <div class="terminal-line">-rw-r--r--    1 root     root       1521019 Jun 11 02:07 mongo_20260611_020700.tar.gz</div>
+                <div class="terminal-line">-rw-r--r--    1 root     root       6990013 Jun 15 15:31 postgres_20260615_153058.tar.gz</div>
+                <div class="terminal-line">-rw-r--r--    1 root     root             0 Jun 15 16:13 simulado_new.tar.gz</div>
             </div>
         </section>
 
-        <!-- SECCIÓN 9: REFLEXIÓN TÉCNICA -->
-        <section id="reflexion">
-            <h2>9. Reflexión Técnica y Escalabilidad</h2>
-
-            <h3>9.1 Aplicación de Streaming (Speed Layer - Arquitectura Lambda)</h3>
+        <!-- SECCIÓN 9: PROBLEMAS ENCONTRADOS -->
+        <section id="problemas">
+            <h2>9. Problemas Encontrados y Soluciones</h2>
             
-            <div class="reflection-box">
-                <h4>¿Dónde y cuándo aplicar Streaming?</h4>
-                <p>
-                    En la arquitectura actual, el Streaming debe ser introducido en tres puntos críticos de la Speed Layer para complementar el procesamiento batch actual:
-                </p>
-                <ul>
-                    <li><strong>Logs de Sistema (logs_sistema.txt):</strong> Detección de anomalías y fraudes en transacciones. En producción, un stream de Azure Event Hubs conectado a Azure Stream Analytics activaría alertas automáticas en &lt; 2 segundos para bloquear patrones sospechosos o reintentos masivos fallidos.</li>
-                    <li><strong>Eventos de App Móvil (eventos_app.json):</strong> Análisis de comportamiento del usuario en tiempo real. Cuando un cliente busca un producto, un pipeline de Kafka + Spark Streaming permite actualizar las recomendaciones en pantalla con latencias inferiores a 500ms.</li>
-                    <li><strong>Redes Sociales (redes_sociales.json):</strong> Monitoreo de sentimiento hiper-dinámico. Un comentario negativo sobre un producto en redes activa una alerta inmediata a servicio al cliente y ajusta dinámicamente el scoring del producto en el catálogo web.</li>
-                </ul>
+            <div class="pillar-section">
+                <div class="pillar-title">1. Violación de Claves Foráneas (Desfase de Carga de Maestros)</div>
+                <div class="pillar-content">
+                    <p>
+                        <strong>Problema:</strong> Al procesar transacciones del Día 1, algunas ventas (ej. venta del cliente 106) hacían referencia a un ID de cliente no cargado en la dimensión del Día 1 (se cargaba el Día 2). Esto provocó un fallo inmediato por FK en PostgreSQL.
+                    </p>
+                    <p>
+                        <strong>Mitigación:</strong> Se implementó la estrategia analítica de <em>Miembro Desconocido</em> con ID <code>-1</code>. Al fallar el lookup, la venta se asocia temporalmente al ID <code>-1</code> y se carga sin abortar el batch, actualizando la relación correcta SCD Tipo 1 al cargar el siguiente lote de maestros.
+                    </p>
+                </div>
             </div>
 
-            <h3>9.2 Escalabilidad de la Solución Hacia Azure Cloud</h3>
-            
-            <div class="reflection-box">
-                <h4>Migración de Gemelo Digital a Producción Real</h4>
-                <p>
-                    Esta implementación local (Gemelo Digital) está diseñada para ser 100% migrable hacia Microsoft Azure sin refactorizar la lógica de negocio ni los esquemas dimensionales:
-                </p>
-                <ul>
-                    <li><strong>Almacenamiento Local → ADLS Gen2 (Azure Data Lake Storage):</strong> Las carpetas de almacenamiento crudo migran 1:1 a contenedores ADLS Gen2, aprovechando la jerarquía de espacio de nombres y seguridad avanzada.</li>
-                    <li><strong>MongoDB (Data Lake) → Cosmos DB (NoSQL):</strong> El Replica Set actual se migra a Azure Cosmos DB usando la API para MongoDB. Los workers ELT mantienen su código en PyMongo intacto, modificando únicamente la cadena de conexión hacia la nube.</li>
-                    <li><strong>PostgreSQL (Data Warehouse) → Azure Synapse Analytics / Azure SQL DW:</strong> El modelo Star Schema y las consultas analíticas de los KPIs se ejecutan de forma nativa en Synapse, escalando el almacenamiento y cómputo de forma masivamente paralela (MPP).</li>
-                    <li><strong>Workers Python → Apache Spark (Azure Databricks):</strong> Los scripts autónomos de transformación se convierten en jobs de PySpark gestionados por Databricks, permitiendo procesar millones de transacciones por segundo de forma distribuida.</li>
-                    <li><strong>Django BI → Power BI Embedded:</strong> La capa de visualización de Chart.js se integra nativamente con tableros de Power BI embebidos directamente en el portal corporativo.</li>
-                </ul>
+            <div class="pillar-section">
+                <div class="pillar-title">2. Calidad de Datos en Origen (Falta de SKU)</div>
+                <div class="pillar-content">
+                    <p>
+                        <strong>Problema:</strong> El canal Web ocasionalmente enviaba transacciones con datos incompletos.
+                    </p>
+                    <p>
+                        <strong>Mitigación:</strong> Se reforzaron las validaciones en los esquemas Pydantic del API Backend para obligar a sanitizar el input antes de que ingrese al pipeline de datos.
+                    </p>
+                </div>
             </div>
 
-            <div class="reflection-box">
-                <h4>Desafíos Operativos y Estrategias de Mitigación en Producción</h4>
-                <ul>
-                    <li><strong>Calidad de Datos en Origen:</strong> El canal Web ocasionalmente envía transacciones con datos incompletos (ej. falta de SKU). <em>Mitigación:</em> Reforzar las reglas de validación en los esquemas Pydantic del API y obligar a los frontends a sanitizar el input antes del envío.</li>
-                    <li><strong>Saturación de Memoria en Alta Concurrencia:</strong> Ante picos de 10.000 transacciones/segundo, el buffer en memoria de FastAPI podría saturar la RAM del contenedor. <em>Mitigación:</em> Reemplazar la lista en memoria por un cluster de **Redis** o un topic de **Kafka** como buffer durable y desacoplado.</li>
-                    <li><strong>Consistencia en Replica Sets:</strong> Fallos de red durante la sincronización entre nodos primarios y secundarios pueden generar pérdida de datos enrutar a lecturas sucias. <em>Mitigación:</em> Configurar el <code>write concern = "majority"</code> en MongoDB para garantizar que el dato esté replicado en la mayoría de los nodos antes de confirmar el éxito al cliente.</li>
-                    <li><strong>Impacto de ETL en Consultas BI:</strong> Ejecutar transformaciones pesadas sobre el mismo motor de base de datos que atiende los dashboards puede degradar el tiempo de respuesta de la interfaz. <em>Mitigación:</em> Separar cargas de trabajo manteniendo una réplica de lectura (Read Replica) dedicada exclusivamente para las consultas analíticas de BI.</li>
-                </ul>
+            <div class="pillar-section">
+                <div class="pillar-title">3. Saturación de Memoria por Alta Concurrencia</div>
+                <div class="pillar-content">
+                    <p>
+                        <strong>Problema:</strong> Ante picos de 10.000 tx/s, el buffer en memoria de FastAPI podría saturar la RAM del contenedor.
+                    </p>
+                    <p>
+                        <strong>Mitigación:</strong> Planificar el reemplazo de la cola en memoria por un clúster de **Redis** o un topic de **Apache Kafka** como buffer durable.
+                    </p>
+                </div>
+            </div>
+
+            <div class="pillar-section">
+                <div class="pillar-title">4. Consistencia en Replica Sets de Almacenamiento</div>
+                <div class="pillar-content">
+                    <p>
+                        <strong>Problema:</strong> Fallos de red temporales entre los Replica Sets (MongoDB o Postgres WAL sync) podían inducir a lecturas sucias en consultas BI.
+                    </p>
+                    <p>
+                        <strong>Mitigación:</strong> Configurar el parámetro <code>write concern = "majority"</code> en MongoDB y balancear las consultas analíticas pesadas del BI hacia la réplica de lectura (Read Replica) dedicada de PostgreSQL.
+                    </p>
+                </div>
             </div>
         </section>
 
         <!-- SECCIÓN 10: CONCLUSIONES -->
         <section id="conclusiones">
-            <h2>10. Conclusiones</h2>
+            <h2>10. Conclusiones y Trabajo Futuro</h2>
+            <p>
+                La arquitectura implementada demuestra la viabilidad técnica y el valor de un ecosistema desacoplado de microservicios. Se construyó un puente robusto entre el procesamiento batch incremental y la reportabilidad analítica.
+            </p>
+
+            <div class="screenshot-container">
+                <img src="capturas/dashboard_bi.png" alt="Captura del Dashboard BI">
+                <div class="screenshot-caption">Figura 10.1: Panel de Dashboard BI mostrando la consolidación de ingresos y transacciones reales.</div>
+            </div>
+
+            <h3>10.1 Desglose de KPIs y Análisis de Rendimiento</h3>
             
+            <h4>KPI 1: Top 3 Clientes por Lifetime Value (LTV)</h4>
+            <ul>
+                <li><strong>#1 Juan Perez (ID: 101)</strong> — $13.663.096 CLP | Segmento Premium (20 transacciones)</li>
+                <li><strong>#2 WalMart Chile (ID: 104)</strong> — $11.573.162 CLP | Segmento Premium (18 transacciones)</li>
+                <li><strong>#3 Cencosud Holding (ID: 102)</strong> — $9.238.100 CLP | Segmento Regular (15 transacciones)</li>
+            </ul>
             <p>
-                La arquitectura de datos contenerizada implementada para RetailSmart Chile SA demuestra la viabilidad técnica y el enorme valor estratégico de un ecosistema moderno de microservicios. A través de la orquestación de nueve contenedores en Docker Compose, se ha construido un puente robusto entre la captura transaccional en tiempo real y la toma de decisiones ejecutivas.
+                <em>Implicancia Comercial:</em> Una alta concentración de ingresos en un grupo reducido de clientes (Principio de Pareto) exige la fidelización agresiva mediante descuentos y promociones personalizadas.
             </p>
 
+            <h4>KPI 2: Rendimiento por Canal de Venta</h4>
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h4>Tienda Física</h4>
+                    <div class="kpi-value">34.1%</div>
+                    <div class="kpi-detail">
+                        Ingresos: $29.456.328 CLP<br>
+                        Transacciones: 59 txs<br>
+                        Ticket Promedio: $499.259 CLP
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Web (E-Commerce)</h4>
+                    <div class="kpi-value">27.2%</div>
+                    <div class="kpi-detail">
+                        Ingresos: $23.454.192 CLP<br>
+                        Transacciones: 62 txs<br>
+                        Ticket Promedio: $378.293 CLP
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <h4>App Móvil</h4>
+                    <div class="kpi-value">38.7%</div>
+                    <div class="kpi-detail">
+                        Ingresos: $33.372.042 CLP<br>
+                        Transacciones: 49 txs<br>
+                        Ticket Promedio: $681.062 CLP
+                    </div>
+                </div>
+            </div>
             <p>
-                <strong>Hallazgos y Logros Clave:</strong>
+                <em>Implicancia Comercial:</em> El canal móvil presenta el mayor ticket promedio unitario ($681k), indicando una alta propensión a compras tecnológicas unitarias de alto valor, mientras que el canal web concentra alta frecuencia con tickets menores.
             </p>
+
+            <h4>KPI 3: Tendencia Cronológica de Ingresos</h4>
+            <p>
+                El Dashboard BI mapea las transacciones acumuladas en ventanas de tiempo por hora, permitiendo correlacionar picos de venta con campañas de marketing o franjas horarias de alta concurrencia.
+            </p>
+
+            <div class="screenshot-container">
+                <img src="capturas/dashboard_admin.png" alt="Captura de Jazzmin Django Admin">
+                <div class="screenshot-caption">Figura 10.2: Interfaz de gestión administrativa Django con tema Cyborg Jazzmin en el puerto 8081.</div>
+            </div>
+
+            <h3>10.2 Escalabilidad Hacia la Nube (Microsoft Azure)</h3>
             <ul>
-                <li>La adopción del paradigma <span class="neon-accent">ELT</span> sobre un Data Lake NoSQL (MongoDB) garantiza la preservación del dato crudo histórico, permitiendo flexibilidad total para futuras reestructuraciones analíticas.</li>
-                <li>La integración de contratos OpenAPI y validación Pydantic en FastAPI establece un estándar corporativo de gobernanza y defensa activa contra datos malformados.</li>
-                <li>La gestión estricta de dependencias (<code>depends_on</code> + healthchecks) elimina las condiciones de carrera, garantizando despliegues automatizados y estables.</li>
-                <li>El análisis de los KPIs revela oportunidades claras de optimización comercial: fidelización del top 20% de clientes líderes y fortalecimiento del ticket promedio en canales digitales (Web/App).</li>
+                <li><strong>Data Lake Local → ADLS Gen2:</strong> Migración de las carpetas locales de data_lake 1:1 a contenedores de Azure Data Lake Storage.</li>
+                <li><strong>MongoDB → Azure Cosmos DB:</strong> Migración transparente del Replica Set rs0 a Cosmos DB API para MongoDB.</li>
+                <li><strong>PostgreSQL → Azure Synapse Analytics:</strong> Conversión del Star Schema relacional a Synapse SQL Pool para procesamiento masivamente paralelo (MPP).</li>
+                <li><strong>Workers Python → Azure Databricks (Apache Spark):</strong> Los scripts de ETL se convierten en jobs de PySpark para escalamiento horizontal masivo.</li>
+                <li><strong>Django BI → Power BI Embedded:</strong> Los gráficos de Chart.js se integran y migran a tableros analíticos interactivos y oficiales de Power BI.</li>
             </ul>
 
+            <h3>10.3 Aplicación de Streaming (Speed Layer de Arquitectura Lambda)</h3>
             <p>
-                <strong>Próximos Pasos Estratégicos:</strong>
+                Para transitar de lotes batch a tiempo real en producción:
             </p>
             <ul>
-                <li>Evolucionar la capa de velocidad (Speed Layer) incorporando Apache Kafka y Spark Streaming para habilitar casos de uso de analítica en tiempo real (real-time fraud detection y personalización).</li>
-                <li>Planificar la migración progresiva hacia Microsoft Azure (Cosmos DB, Synapse, Databricks) utilizando este proyecto como Gemelo Digital arquitectónico.</li>
-                <li>Implementar modelos de Inteligencia Artificial y Machine Learning sobre el Data Warehouse consolidado para transitar desde la analítica descriptiva hacia la analítica predictiva y prescriptiva.</li>
+                <li><strong>Logs de Sistema:</strong> Detección de fraudes y alertas de seguridad de eventos en streaming a través de Azure Event Hubs en &lt; 2s.</li>
+                <li><strong>Eventos de App Móvil:</strong> Motores de recomendación instantánea basados en navegación procesados con Kafka y Spark Streaming.</li>
+                <li><strong>Redes Sociales:</strong> Monitoreo de sentimiento en vivo para reaccionar ante menciones negativas y ajustar catálogos.</li>
             </ul>
-
-            <p style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #000000;">
-                Este informe certifica la entrega de una infraestructura de grado de producción, documentada exhaustivamente y lista para soportar el crecimiento operativo de RetailSmart Chile SA durante los próximos ciclos comerciales.
-            </p>
         </section>
-
     </main>
 
     <!-- FOOTER -->
     <footer>
-        <p><span class="protocol">RetailSmart Chile SA</span> — Arquitectura de Almacenamiento de Datos (INACAP) — Evaluación 2</p>
-        <p>Informe Técnico de Implementación | Edición Extendida v2.0 | Mayo 2026</p>
+        <p><span class="protocol">RetailSmart Chile SA</span> — Arquitectura y Almacenamiento de Datos (INACAP) — Evaluación 3</p>
+        <p>Informe Técnico de Implementación | Edición E3.0 | Junio 2026</p>
         <p style="margin-top: 15px; font-size: 11px; color: #AAAAAA;">
-            <span class="protocol">GLITCHPOINT v1.0</span> | Diseño, Arquitectura y Documentación por Nicolás Anrique, Camilo Nuñez, Diego Poblete
+            <span class="protocol">GLITCHPOINT v3.0</span> | Diseño, Arquitectura y Documentación por Nicolás Anrique, Camilo Nuñez, Diego Poblete
         </p>
     </footer>
 

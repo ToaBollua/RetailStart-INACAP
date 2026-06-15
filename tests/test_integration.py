@@ -5,7 +5,7 @@ import json
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(message)s')
-logger = logging.getLogger("H0P3-TEST")
+logger = logging.getLogger("RETAIL-TEST")
 
 API_URL = "http://localhost:8000"
 
@@ -17,7 +17,7 @@ def test_end_to_end_flow():
     test_id = f"tx-integration-{int(time.time())}"
     payload = {
         "id": test_id,
-        "data": {"cliente": "Bollua_E2E", "item": "Servidor_IA", "precio": 15000}
+        "data": {"cliente": "Cliente_E2E", "item": "Servidor_IA", "precio": 15000}
     }
 
     logger.info(f"[1/4] Enviando payload de prueba al API: {test_id}")
@@ -54,7 +54,7 @@ def test_end_to_end_flow():
     logger.info(f"Registro encontrado en Postgres: {stdout}")
     try:
         db_data = json.loads(stdout)
-        assert db_data["cliente"] == "Bollua_E2E"
+        assert db_data["cliente"] == "Cliente_E2E"
         logger.info("¡PRUEBA E2E COMPLETADA CON ÉXITO! Flujo de datos verificado de extremo a extremo.")
     except Exception as e:
         assert False, f"Fallo al parsear JSONB de Postgres: {stdout}. Error: {e}"
