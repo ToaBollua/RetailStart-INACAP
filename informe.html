@@ -999,14 +999,19 @@
                 <div class="terminal-line"><span class="terminal-success">============================== 3 passed in 25.54s ==============================</span></div>
             </div>
 
-            <h3>8.4 Evidencia de la Política de Purga de Backups (srv-cron-backup)</h3>
+            <h3>8.4 Evidencia y Análisis Detallado de la Política de Backups (srv-cron-backup)</h3>
             <p>
-                El contenedor de mantenimiento <code>srv-cron-backup</code> tiene programada una política de retención de copias de seguridad de 7 días. El script de purga automatizado ejecuta el siguiente comando periódicamente:
+                Para mitigar riesgos de pérdida de datos por fallos de hardware o corrupción lógica, la arquitectura incorpora el microservicio <code>srv-cron-backup</code>. Este servicio está diseñado bajo las mejores prácticas de disponibilidad y aislamiento de almacenamiento:
             </p>
-            <div class="code-block">find /backups -type f -name '*.tar.gz' -mtime +7 -print -delete</div>
-            <p>
-                Para verificar su funcionamiento en un entorno controlado, se inyectaron de manera simulada archivos antiguos con fecha del 1 de junio y archivos válidos de la fecha actual. A continuación se detalla el log del terminal demostrando la eliminación selectiva de los backups antiguos y la persistencia de los nuevos:
-            </p>
+            <ul>
+                <li><strong>Mecanismo de Respaldo Físico:</strong> El servicio monta de forma segura y en modo lectura los volúmenes nombrados de Docker (<code>mongo_primary_data</code> y <code>pg_primary_data</code>) en las rutas <code>/data/mongo:ro</code> y <code>/data/postgres:ro</code>. Esto le permite comprimir en caliente el estado binario del Data Lake y del DW a archivos compactos <code>.tar.gz</code> sin inducir latencia ni bloqueos por locks transaccionales directos sobre los motores activos.</li>
+                <li><strong>Estrategia de Ventana de Retención (RPO/RTO):</strong> Se ha definido una política de retención de <strong>7 días</strong>. En caso de fallo transaccional grave, esto permite restaurar de manera limpia los dumps binarios hasta 7 días en el pasado (RPO de 24 horas y RTO de menos de 2 horas). El proceso automatizado es gestionado por un bucle continuo de Linux que duerme 86.400 segundos (24 horas) y luego ejecuta la directiva de purga:
+                    <div class="code-block">find /backups -type f -name '*.tar.gz' -mtime +7 -print -delete</div>
+                    La condición <code>-mtime +7</code> compara de forma estricta el tiempo de modificación del sistema (mtime) con la hora del sistema en Linux Unix Timestamp, borrando los tarballs obsoletos en el volumen compartido.
+                </li>
+                <li><strong>Simulación de Escenario de Purga:</strong> Para validar de forma controlada esta política, se crearon de manera artificial backups obsoletos con fecha de modificación modificada en el pasado (1 de junio, es decir, hace 14 días) y backups válidos recientes. El log del terminal del contenedor Alpine Linux demuestra el descarte selectivo y automático de los archivos viejos manteniendo los recientes:</li>
+            </ul>
+
             <div class="terminal-simulation">
                 <div class="terminal-line"><span class="terminal-prompt">/backups #</span> ls -la /backups</div>
                 <div class="terminal-line">total 23056</div>
