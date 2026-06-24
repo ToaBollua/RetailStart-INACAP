@@ -144,7 +144,7 @@ services:
       context: ./servicios/srv-dashboard-bi
     container_name: srv-dashboard-bi
     ports:
-      - "8081:8000"
+      - "8083:8000"
     environment:
       - PG_URI=postgresql://retail_user:retail_pass@srv-db-postgres-primary:5432/retail_dw
     depends_on:

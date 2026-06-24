@@ -607,22 +607,37 @@ def get_mongo_db():
         <section id="puertos-red">
             <h2>6. Desacoplamiento de Conflictos en Puertos de Red del Host</h2>
             <p>
-                Para permitir el levantamiento del clúster académico de manera simultánea con otras suites empresariales que corren localmente, se detectó una colisión por el uso del puerto expuesto <code>8080</code> en el host local.
+                Para permitir el levantamiento del clúster académico de manera simultánea con otras suites empresariales que corren localmente (como el sistema H0P3 del host), se detectó una colisión por el uso de los puertos expuestos <code>8080</code> y <code>8081</code> en el host local.
             </p>
             <p>
-                Se resolvió desacoplando el servicio <code>srv-dashboard-cliente</code> (un servidor web Nginx ligero) remapeando su puerto local en el archivo de orquestación <code>docker-compose.yml</code>:
+                Para solucionar esto, se desacoplaron ambos servicios en el archivo de orquestación <code>docker-compose.yml</code>:
             </p>
+            <ul>
+                <li>El servicio <code>srv-dashboard-cliente</code> (servidor Nginx) fue remapeado de <code>8080:80</code> a <code>8082:80</code>.</li>
+                <li>El servicio <code>srv-dashboard-bi</code> (aplicación Django BI) fue remapeado de <code>8081:8000</code> a <code>8083:8000</code>, debido a la colisión con la telemetría corporativa en el puerto <code>8081</code> del host.</li>
+            </ul>
             <div class="code-block"># docker-compose.yml modificado:
   srv-dashboard-cliente:
     build:
       context: ./servicios/srv-dashboard-cliente
     container_name: srv-dashboard-cliente
     ports:
-      - "8082:80"  # Remapeado de 8080:80 para evitar colisiones
+      - "8082:80"  # Remapeado de 8080:80
+    networks:
+      - retail_network
+
+  srv-dashboard-bi:
+    build:
+      context: ./servicios/srv-dashboard-bi
+    container_name: srv-dashboard-bi
+    ports:
+      - "8083:8000"  # Remapeado de 8081:8000
+    environment:
+      - PG_URI=postgresql://retail_user:retail_pass@srv-db-postgres-primary:5432/retail_dw
     networks:
       - retail_network</div>
             <p>
-                Esta alteración permite acceder al Dashboard de cliente a través del puerto <code>8082</code> sin degradar ninguna de las llamadas internas de la red virtual del clúster <code>retail_network</code>.
+                Esta alteración de la configuración de red virtual y de mapeo de sockets del host permite que ambos paneles analíticos coexistan pacíficamente sin interferir con las llamadas internas de la red virtual del clúster <code>retail_network</code>.
             </p>
         </section>
 
