@@ -3,195 +3,289 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RetailSmart // Terminal de Cliente</title>
+  <title>RetailSmart // Client Terminal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            neon: '#00FFCC',
-            neon2: '#00FF66',
-            cyber: '#0a0a0a',
-            panel: '#111111',
-            border: '#1a2a1a',
-          },
-          fontFamily: {
-            mono: ['Fira Code', 'monospace'],
-            sans: ['Inter', 'sans-serif'],
-          },
-          boxShadow: {
-            neon: '0 0 8px #00FFCC, 0 0 20px rgba(0,255,204,0.3)',
-            'neon-sm': '0 0 4px #00FFCC, 0 0 8px rgba(0,255,204,0.2)',
-          },
-        },
-      },
-    };
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; }
-    body { background: #0a0a0a; color: #c0c0c0; font-family: 'Inter', sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --neon:    #00FF41;
+      --neon-dim: rgba(0, 255, 65, 0.15);
+      --neon-glow: 0 0 8px #00FF41, 0 0 24px rgba(0,255,65,0.4);
+      --bg:      #020a02;
+      --panel:   #040d04;
+      --border:  rgba(0, 255, 65, 0.18);
+      --text:    #a0c8a0;
+      --text-dim: #3a5a3a;
+      --red:     #ff3333;
+      --yellow:  #aaff00;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Fira Code', monospace; font-size: 13px; line-height: 1.5; }
+
+    /* scrollbar */
     ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: #0a0a0a; }
-    ::-webkit-scrollbar-thumb { background: #00FFCC44; }
+    ::-webkit-scrollbar-track { background: #020a02; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,255,65,0.3); border-radius: 2px; }
 
-    .glitch-border {
-      border: 1px solid #00FFCC33;
-      box-shadow: 0 0 6px rgba(0,255,204,0.15);
-      transition: all 0.2s ease;
-    }
-    .glitch-border:hover {
-      border-color: #00FFCC;
-      box-shadow: 0 0 12px rgba(0,255,204,0.5), inset 0 0 6px rgba(0,255,204,0.05);
-    }
-
-    .btn-execute {
-      background: transparent;
-      border: 1px solid #00FFCC;
-      color: #00FFCC;
-      font-family: 'Fira Code', monospace;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.15s ease;
-      clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
-    }
-    .btn-execute::before {
+    /* scanline overlay */
+    body::before {
       content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(0,255,204,0.15), transparent);
-      transform: translateX(-100%);
-      transition: transform 0.4s ease;
-    }
-    .btn-execute:hover::before { transform: translateX(100%); }
-    .btn-execute:hover {
-      background: rgba(0,255,204,0.08);
-      box-shadow: 0 0 16px rgba(0,255,204,0.5), inset 0 0 8px rgba(0,255,204,0.05);
-      text-shadow: 0 0 8px #00FFCC;
-    }
-    .btn-execute:active { transform: scale(0.97); }
-
-    .glitch-text {
-      text-shadow: 0 0 10px #00FFCC, 0 0 20px rgba(0,255,204,0.5);
-      color: #00FFCC;
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,255,65,0.012) 3px, rgba(0,255,65,0.012) 4px);
+      pointer-events: none; z-index: 9999;
     }
 
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-    .cursor-blink { animation: blink 1s step-end infinite; }
-
-    @keyframes scanline {
-      0% { transform: translateY(-100%); }
-      100% { transform: translateY(100vh); }
-    }
+    /* flicker scanline */
+    @keyframes scanline-move { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
     .scanline {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(transparent, rgba(0,255,204,0.06), transparent);
-      pointer-events: none;
-      animation: scanline 8s linear infinite;
-      z-index: 1000;
+      position: fixed; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(transparent, rgba(0,255,65,0.08), transparent);
+      pointer-events: none; z-index: 9998;
+      animation: scanline-move 10s linear infinite;
     }
 
-    @keyframes glitch-in {
-      0% { opacity: 0; transform: translateX(-4px); }
-      50% { opacity: 0.8; }
-      100% { opacity: 1; transform: translateX(0); }
-    }
-    .log-entry { animation: glitch-in 0.2s ease forwards; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes pulse-glow { 0%,100%{box-shadow:0 0 4px var(--neon)} 50%{box-shadow:var(--neon-glow)} }
+    @keyframes row-in { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes count-up { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
 
-    .select-styled {
-      appearance: none;
-      background: #0a0a0a;
-      border: 1px solid #00FFCC33;
-      color: #00FFCC;
-      font-family: 'Fira Code', monospace;
-      font-size: 0.85rem;
-      padding: 8px 12px;
-      outline: none;
+    /* HEADER */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--panel);
+    }
+    .brand { color: var(--neon); font-size: 1.1rem; font-weight: 700; letter-spacing: 0.15em; text-shadow: var(--neon-glow); }
+    .sys-info { font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; }
+    #clock { color: var(--neon); font-size: 11px; opacity: 0.8; }
+    .dot { width: 7px; height: 7px; background: var(--neon); border-radius: 50%; box-shadow: var(--neon-glow); animation: blink 2s ease infinite; }
+
+    /* LAYOUT */
+    main { display: grid; grid-template-columns: 320px 1fr; grid-template-rows: auto 1fr; gap: 12px; padding: 14px; max-height: calc(100vh - 52px); overflow: hidden; }
+
+    /* PANEL */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 16px;
+      position: relative;
+    }
+    .panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, var(--neon-dim) 0%, transparent 40%);
+      pointer-events: none; opacity: 0.3;
+    }
+    .panel-title { color: var(--neon); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 14px; opacity: 0.9; }
+    .panel-title::before { content: '// '; }
+
+    /* FORM ELEMENTS */
+    label.field-label { display: block; font-size: 10px; color: var(--text-dim); letter-spacing: 0.12em; margin-bottom: 5px; text-transform: uppercase; }
+
+    select, input {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--neon);
+      font-family: 'Fira Code', monospace; font-size: 12px; padding: 8px 10px; outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .select-styled:hover, .select-styled:focus {
-      border-color: #00FFCC;
-      box-shadow: 0 0 8px rgba(0,255,204,0.3);
-    }
+    select:hover, select:focus, input:focus { border-color: var(--neon); box-shadow: 0 0 8px rgba(0,255,65,0.2); }
 
-    .status-indicator {
-      width: 8px; height: 8px;
-      background: #00FF66;
-      box-shadow: 0 0 6px #00FF66;
-      animation: blink 2s ease-in-out infinite;
+    .field { margin-bottom: 12px; }
+
+    /* CANAL BUTTONS */
+    .canal-group { display: flex; gap: 6px; }
+    .canal-btn {
+      flex: 1; background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+      font-family: 'Fira Code', monospace; font-size: 10px; letter-spacing: 0.1em; padding: 7px 4px;
+      cursor: pointer; transition: all 0.15s; text-transform: uppercase;
     }
+    .canal-btn:hover { border-color: var(--neon); color: var(--neon); }
+    .canal-btn.active { border-color: var(--neon); color: var(--neon); background: var(--neon-dim); box-shadow: 0 0 8px rgba(0,255,65,0.25); }
+
+    /* EXECUTE BTN */
+    .btn-exec {
+      width: 100%; background: transparent; border: 1px solid var(--neon); color: var(--neon);
+      font-family: 'Fira Code', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.15em;
+      padding: 11px; cursor: pointer; text-transform: uppercase; position: relative; overflow: hidden;
+      transition: all 0.15s; clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    }
+    .btn-exec::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(0,255,65,0.18), transparent);
+      transform: translateX(-100%); transition: transform 0.35s ease;
+    }
+    .btn-exec:hover::after { transform: translateX(100%); }
+    .btn-exec:hover { background: var(--neon-dim); box-shadow: var(--neon-glow); text-shadow: 0 0 8px var(--neon); }
+    .btn-exec:active { transform: scale(0.98); }
+    .btn-exec:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-sm {
+      flex: 1; background: transparent; border: 1px solid var(--border); color: var(--text);
+      font-family: 'Fira Code', monospace; font-size: 10px; letter-spacing: 0.08em; padding: 7px 6px;
+      cursor: pointer; transition: all 0.15s; text-transform: uppercase;
+    }
+    .btn-sm:hover { border-color: var(--neon); color: var(--neon); }
+    .btn-sm:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* STATS */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+    .stat-box { text-align: center; }
+    .stat-num { font-size: 1.4rem; font-weight: 700; color: var(--neon); text-shadow: var(--neon-glow); animation: count-up 0.3s ease; display: block; }
+    .stat-num.err { color: var(--red); text-shadow: 0 0 8px var(--red); }
+    .stat-label { font-size: 9px; color: var(--text-dim); letter-spacing: 0.1em; }
+
+    /* CSV UPLOAD SECTION */
+    .upload-section { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+    .file-status { font-size: 10px; color: var(--text-dim); margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .upload-btns { display: flex; gap: 6px; margin-top: 6px; }
+
+    /* LOG TERMINAL (bottom left) */
+    .log-panel { grid-column: 1; display: flex; flex-direction: column; overflow: hidden; max-height: 220px; }
+    #log-terminal { flex: 1; overflow-y: auto; font-size: 11px; line-height: 1.6; }
+    .log-entry { animation: row-in 0.18s ease; padding: 1px 0; }
+
+    /* TRANSACTIONS TABLE PANEL */
+    .table-panel { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; overflow: hidden; }
+    .table-wrap { flex: 1; overflow-y: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { position: sticky; top: 0; background: var(--panel); z-index: 10; }
+    thead tr { border-bottom: 2px solid var(--neon); }
+    th { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--neon); padding: 8px 10px; text-align: left; font-weight: 400; opacity: 0.9; }
+    tbody tr { border-bottom: 1px solid rgba(0,255,65,0.06); transition: background 0.15s; animation: row-in 0.25s ease; }
+    tbody tr:hover { background: rgba(0,255,65,0.04); }
+    td { padding: 7px 10px; font-size: 11px; color: var(--text); }
+    .td-id { color: var(--neon); opacity: 0.8; font-size: 10px; }
+    .td-canal { font-size: 9px; letter-spacing: 0.1em; padding: 2px 6px; border: 1px solid var(--border); color: var(--text-dim); }
+    .td-canal.web { border-color: rgba(0,255,65,0.4); color: var(--neon); }
+    .td-canal.app { border-color: rgba(170,255,0,0.4); color: var(--yellow); }
+    .td-canal.tienda_fisica { border-color: rgba(0,200,255,0.4); color: #00ccff; }
+    .td-status { font-size: 10px; }
+    .td-status.ok { color: var(--neon); }
+    .td-status.err { color: var(--red); }
+    .td-precio { color: var(--neon); }
+    .td-ts { font-size: 10px; color: var(--text-dim); }
+
+    /* EMPTY STATE */
+    .empty-state { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-dim); font-size: 11px; flex-direction: column; gap: 8px; }
+    .empty-state .cursor-blink { color: var(--neon); animation: blink 1s step-end infinite; }
+
+    /* LIVE COUNTER */
+    .live-badge { font-size: 9px; color: var(--neon); letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; }
+    .live-dot { width: 5px; height: 5px; background: var(--neon); border-radius: 50%; animation: pulse-glow 1.5s ease infinite; }
+
+    /* PROGRESS BAR */
+    .progress-wrap { display: none; margin-top: 8px; }
+    .progress-wrap.active { display: block; }
+    .progress-bar-bg { width: 100%; height: 3px; background: rgba(0,255,65,0.1); }
+    .progress-bar-fill { height: 3px; background: var(--neon); box-shadow: 0 0 6px var(--neon); transition: width 0.12s linear; width: 0%; }
+    .progress-label { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
+    .progress-global-bg { width: 100%; height: 5px; background: rgba(0,255,65,0.08); margin-top: 6px; }
+    .progress-global-fill { height: 5px; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: width 0.2s linear; width: 0%; }
+
+    /* DROP ZONE */
+    .drop-zone {
+      border: 1px dashed rgba(0,255,65,0.3);
+      padding: 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--neon);
+      background: rgba(0,255,65,0.04);
+      box-shadow: inset 0 0 12px rgba(0,255,65,0.06);
+    }
+    .drop-zone-label { font-size: 10px; color: var(--text-dim); letter-spacing: 0.1em; line-height: 1.8; pointer-events: none; }
+    .drop-zone-label strong { color: var(--neon); display: block; font-size: 11px; }
+
+    /* FILE QUEUE */
+    .file-queue { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; max-height: 100px; overflow-y: auto; }
+    .file-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 8px; border: 1px solid rgba(0,255,65,0.1);
+      font-size: 10px; background: rgba(0,255,65,0.02);
+      animation: row-in 0.15s ease;
+    }
+    .file-item-name { color: var(--neon); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+    .file-item-size { color: var(--text-dim); margin-left: 6px; flex-shrink: 0; }
+    .file-item-badge {
+      font-size: 9px; padding: 1px 6px; letter-spacing: 0.08em; flex-shrink: 0;
+      border: 1px solid var(--border); color: var(--text-dim);
+    }
+    .file-item-badge.done { border-color: var(--neon); color: var(--neon); }
+    .file-item-badge.active { border-color: var(--yellow); color: var(--yellow); }
+    .file-item-badge.error { border-color: var(--red); color: var(--red); }
+    .file-item-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 0 4px; flex-shrink: 0; }
+    .file-item-remove:hover { color: var(--red); }
+
+    footer { border-top: 1px solid var(--border); padding: 6px 20px; font-size: 9px; color: var(--text-dim); letter-spacing: 0.12em; display: flex; justify-content: space-between; background: var(--panel); }
   </style>
 </head>
-<body class="min-h-screen">
+<body>
   <div class="scanline"></div>
 
   <!-- HEADER -->
-  <header class="border-b border-neon/20 px-6 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="status-indicator rounded-full"></div>
-      <span class="font-mono text-xs text-gray-500">SYS_ONLINE</span>
-      <span class="font-mono text-base font-bold glitch-text tracking-widest">RetailSmart</span>
-      <span class="font-mono text-xs text-gray-600">// CLIENT TERMINAL v1.0</span>
+  <header>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="dot"></div>
+      <span class="sys-info">SYS_ONLINE</span>
+      <span class="brand">RetailSmart</span>
+      <span class="sys-info">// CLIENT TERMINAL v2.0</span>
     </div>
-    <div class="font-mono text-xs text-gray-600" id="clock"></div>
+    <div id="clock"></div>
   </header>
 
-  <!-- MAIN -->
-  <main class="max-w-6xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- MAIN GRID -->
+  <main>
 
-    <!-- PANEL IZQUIERDO: FORMULARIO DE TRANSACCIÓN -->
-    <div class="glitch-border bg-panel p-6 space-y-6">
-      <div class="flex items-center gap-2 mb-2">
-        <span class="font-mono text-neon text-sm font-bold">// MÓDULO DE TRANSACCIÓN</span>
-      </div>
+    <!-- LEFT: CONTROL PANEL -->
+    <div class="panel" style="grid-column:1;grid-row:1">
+      <div class="panel-title">Módulo de Transacción</div>
 
       <!-- SKU -->
-      <div>
-        <label class="font-mono text-xs text-gray-500 block mb-1">PRODUCTO (SKU)</label>
-        <select id="sku" class="select-styled w-full">
-          <option value="SKU-NB-PRO">SKU-NB-PRO &mdash; Notebook Gaming Pro X</option>
-          <option value="SKU-MON-4K">SKU-MON-4K &mdash; Monitor 4K UltraWide</option>
-          <option value="SKU-SSD-2T">SKU-SSD-2T &mdash; SSD NVMe 2TB</option>
-          <option value="SKU-KB-MECH">SKU-KB-MECH &mdash; Teclado Mecánico RGB</option>
-          <option value="SKU-HDST-PRO">SKU-HDST-PRO &mdash; Headset Wireless Pro</option>
-          <option value="SKU-GPU-RTX">SKU-GPU-RTX &mdash; GPU RTX 5090</option>
+      <div class="field">
+        <label class="field-label">Producto (SKU)</label>
+        <select id="sku">
+          <option value="SKU-NB-PRO">SKU-NB-PRO — Notebook Gaming Pro X</option>
+          <option value="SKU-MON-4K">SKU-MON-4K — Monitor 4K UltraWide</option>
+          <option value="SKU-SSD-2T">SKU-SSD-2T — SSD NVMe 2TB</option>
+          <option value="SKU-KB-MECH">SKU-KB-MECH — Teclado Mecánico RGB</option>
+          <option value="SKU-HDST-PRO">SKU-HDST-PRO — Headset Wireless Pro</option>
+          <option value="SKU-GPU-RTX">SKU-GPU-RTX — GPU RTX 5090</option>
         </select>
       </div>
 
       <!-- CANAL -->
-      <div>
-        <label class="font-mono text-xs text-gray-500 block mb-1">CANAL DE VENTA</label>
-        <div class="flex gap-2">
-          <button class="canal-btn flex-1 btn-execute py-2 text-xs" data-canal="web">WEB</button>
-          <button class="canal-btn flex-1 btn-execute py-2 text-xs" data-canal="app">APP</button>
-          <button class="canal-btn flex-1 btn-execute py-2 text-xs" data-canal="tienda_fisica">TIENDA</button>
+      <div class="field">
+        <label class="field-label">Canal de Venta</label>
+        <div class="canal-group">
+          <button class="canal-btn" data-canal="web">WEB</button>
+          <button class="canal-btn" data-canal="app">APP</button>
+          <button class="canal-btn" data-canal="tienda_fisica">TIENDA</button>
         </div>
         <input type="hidden" id="canal" value="web" />
       </div>
 
       <!-- CLIENTE -->
-      <div>
-        <label class="font-mono text-xs text-gray-500 block mb-1">ID CLIENTE</label>
-        <select id="cliente" class="select-styled w-full">
-          <option value="CLI-001">CLI-001 &mdash; Bollua, A.</option>
-          <option value="CLI-002">CLI-002 &mdash; Nakamura, R.</option>
-          <option value="CLI-003">CLI-003 &mdash; Torres, M.</option>
-          <option value="CLI-004">CLI-004 &mdash; Vasquez, K.</option>
-          <option value="CLI-005">CLI-005 &mdash; Reyes, F.</option>
+      <div class="field">
+        <label class="field-label">ID Cliente</label>
+        <select id="cliente">
+          <option value="CLI-001">CLI-001 — Bollua, A.</option>
+          <option value="CLI-002">CLI-002 — Nakamura, R.</option>
+          <option value="CLI-003">CLI-003 — Torres, M.</option>
+          <option value="CLI-004">CLI-004 — Vasquez, K.</option>
+          <option value="CLI-005">CLI-005 — Reyes, F.</option>
         </select>
       </div>
 
       <!-- PRECIO -->
-      <div>
-        <label class="font-mono text-xs text-gray-500 block mb-1">PRECIO SIMULADO (CLP)</label>
-        <select id="precio" class="select-styled w-full">
+      <div class="field">
+        <label class="field-label">Precio Simulado (CLP)</label>
+        <select id="precio">
           <option value="129990">$129.990</option>
           <option value="349990">$349.990</option>
           <option value="89990">$89.990</option>
@@ -201,46 +295,116 @@
         </select>
       </div>
 
-      <!-- BOTÓN EXECUTE -->
-      <button id="btn-transact" class="btn-execute w-full py-4 text-sm tracking-widest">
-        ⚡ EJECUTAR TRANSACCIÓN
-      </button>
+      <!-- EXEC BUTTON -->
+      <button id="btn-transact" class="btn-exec">⚡ Ejecutar Transacción</button>
 
-      <!-- STATS RÁPIDOS -->
-      <div class="grid grid-cols-3 gap-3 pt-2 border-t border-neon/10">
-        <div class="text-center">
-          <div class="font-mono text-neon font-bold text-lg" id="stat-total">0</div>
-          <div class="font-mono text-xs text-gray-600">TX ENVIADAS</div>
+      <!-- CSV UPLOAD -->
+      <div class="upload-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <label class="field-label" style="margin-bottom:0">Ingestar Datasets (CSV)</label>
+          <button id="btn-clear-queue" class="file-item-remove" style="font-size:10px;letter-spacing:0.08em" title="Vaciar cola">[VACIAR]</button>
         </div>
-        <div class="text-center">
-          <div class="font-mono text-neon font-bold text-lg" id="stat-ok">0</div>
-          <div class="font-mono text-xs text-gray-600">EXITOSAS</div>
+
+        <!-- DROP ZONE -->
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="csv-file" accept=".csv" multiple style="display:none" />
+          <div class="drop-zone-label">
+            <strong>📂 SOLTAR ARCHIVOS AQUÍ</strong>
+            o hacer clic para seleccionar · múltiples CSV permitidos
+          </div>
         </div>
-        <div class="text-center">
-          <div class="font-mono text-red-500 font-bold text-lg" id="stat-err">0</div>
-          <div class="font-mono text-xs text-gray-600">ERRORES</div>
+
+        <!-- FILE QUEUE -->
+        <div class="file-queue" id="file-queue"></div>
+
+        <!-- PER-FILE PROGRESS -->
+        <div class="progress-wrap" id="progress-wrap">
+          <div class="progress-label" id="progress-file-label" style="margin-bottom:3px">Archivo: —</div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+          <div class="progress-label" id="progress-label">0 / 0 tx</div>
+        </div>
+
+        <!-- GLOBAL PROGRESS -->
+        <div class="progress-wrap" id="progress-global-wrap">
+          <div class="progress-global-bg"><div class="progress-global-fill" id="progress-global-fill"></div></div>
+          <div class="progress-label" id="progress-global-label">Global: 0 / 0 archivos</div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button id="btn-upload-csv" class="btn-exec" style="font-size:10px;padding:8px;clip-path:none" disabled>⚡ PROCESAR COLA</button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <span class="stat-num" id="stat-total">0</span>
+          <span class="stat-label">TX ENVIADAS</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num" id="stat-ok">0</span>
+          <span class="stat-label">EXITOSAS</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-num err" id="stat-err">0</span>
+          <span class="stat-label">ERRORES</span>
         </div>
       </div>
     </div>
 
-    <!-- PANEL DERECHO: TERMINAL DE LOGS -->
-    <div class="glitch-border bg-cyber p-6 flex flex-col" style="min-height: 500px;">
-      <div class="flex items-center gap-2 mb-4">
-        <span class="font-mono text-neon text-sm font-bold">// TRANSACTION LOG FEED</span>
-        <button id="btn-clear" class="ml-auto font-mono text-xs text-gray-600 hover:text-neon transition-colors">[CLEAR]</button>
+    <!-- LEFT BOTTOM: LOG TERMINAL -->
+    <div class="panel log-panel" style="grid-column:1;grid-row:2">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span class="panel-title" style="margin-bottom:0">Transaction Log Feed</span>
+        <button id="btn-clear" style="background:none;border:none;color:var(--text-dim);font-family:'Fira Code',monospace;font-size:10px;cursor:pointer;letter-spacing:0.08em" onmouseover="this.style.color='var(--neon)'" onmouseout="this.style.color='var(--text-dim)'">[CLEAR]</button>
       </div>
-      <!-- LOG AREA -->
-      <div id="log-terminal" class="flex-1 overflow-y-auto space-y-1 font-mono text-xs" style="max-height: 420px;">
-        <div class="text-gray-600">&gt; Sistema RetailSmart inicializado.</div>
-        <div class="text-gray-600">&gt; Esperando input del operador...<span class="cursor-blink text-neon">▮</span></div>
+      <div id="log-terminal">
+        <div class="log-entry" style="color:var(--text-dim)">&gt; Sistema RetailSmart inicializado.</div>
+        <div class="log-entry" style="color:var(--text-dim)">&gt; Esperando operador...<span style="color:var(--neon);animation:blink 1s step-end infinite;display:inline-block">▮</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TRANSACTIONS TABLE -->
+    <div class="panel table-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span class="panel-title" style="margin-bottom:0">Live Transactions</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+          <span id="tx-count" style="font-size:10px;color:var(--text-dim)">0 registros</span>
+          <button id="btn-clear-table" style="background:none;border:none;color:var(--text-dim);font-family:'Fira Code',monospace;font-size:10px;cursor:pointer" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-dim)'">[RESET]</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tx-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>ID Transacción</th>
+              <th>Timestamp</th>
+              <th>Cliente</th>
+              <th>SKU</th>
+              <th>Canal</th>
+              <th>Precio (CLP)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="tx-tbody">
+          </tbody>
+        </table>
+        <div class="empty-state" id="empty-state">
+          <span>&gt; Tabla vacía. Ejecuta una transacción o carga un CSV.</span>
+          <span class="cursor-blink">▮</span>
+        </div>
       </div>
     </div>
 
   </main>
 
   <!-- FOOTER -->
-  <footer class="border-t border-neon/10 px-6 py-3 text-center">
-    <span class="font-mono text-xs text-gray-700">RetailSmart Chile SA // GLITCHPOINT PROTOCOL // H0P3 BI NODE ACTIVE</span>
+  <footer>
+    <span>RetailSmart Chile SA // GLITCHPOINT PROTOCOL v2.0</span>
+    <span>API: <span id="api-status" style="color:var(--text-dim)">--</span> &nbsp;|&nbsp; Nodo BI: <a href="http://localhost:8083" target="_blank" style="color:var(--neon);text-decoration:none">:8083</a></span>
   </footer>
 
   <script src="app.js"></script>

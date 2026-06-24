@@ -186,20 +186,62 @@ DIA5_DATA = {
     ]
 }
 
-def ingest_raw(day_name, date_str, data_dict):
-    """Escribe los archivos crudos correspondientes en data_lake/raw/."""
-    print(f"\n[PIPELINE] --- INGESTANDO DATOS CRUDOS ({day_name} - {date_str}) ---")
+def ingest_raw_from_datasets(day_name, date_str, day_key):
+    """Lee de datasets/ y escribe en data_lake/raw/ simulando la ingesta."""
+    print(f"\n[PIPELINE] --- INGESTANDO DATOS CRUDOS DESDE DATASETS ({day_name} - {date_str}) ---")
+    datasets_dir = os.path.join(BASE_DIR, "datasets")
     
-    for source, content in data_dict.items():
-        ext = "json" if source == "eventos_app" else "csv"
-        file_path = os.path.join(DATA_LAKE_DIR, "raw", source, f"{date_str}.{ext}")
-        
-        with open(file_path, "w") as f:
-            if ext == "json":
-                json.dump(content, f, indent=4)
-            else:
-                f.write(content.strip())
-        print(f"  [RAW] Escrito: {file_path}")
+    # 1. Clientes CRM
+    cli_path = os.path.join(datasets_dir, "clientes_crm.csv")
+    with open(cli_path, "r") as f:
+        cli_content = f.read()
+    dest_cli_path = os.path.join(DATA_LAKE_DIR, "raw", "clientes_crm", f"{date_str}.csv")
+    with open(dest_cli_path, "w") as f:
+        f.write(cli_content)
+    print(f"  [RAW] Copiado clientes crm: {dest_cli_path}")
+    
+    # 2. Productos ERP
+    prod_path = os.path.join(datasets_dir, "productos_erp.csv")
+    with open(prod_path, "r") as f:
+        prod_content = f.read()
+    dest_prod_path = os.path.join(DATA_LAKE_DIR, "raw", "productos_erp", f"{date_str}.csv")
+    with open(dest_prod_path, "w") as f:
+        f.write(prod_content)
+    print(f"  [RAW] Copiado productos erp: {dest_prod_path}")
+    
+    # 3. Ventas Online
+    online_path = os.path.join(datasets_dir, "ventas_online", f"{day_key}.csv")
+    with open(online_path, "r") as f:
+        online_content = f.read()
+    dest_online_path = os.path.join(DATA_LAKE_DIR, "raw", "ventas_online", f"{date_str}.csv")
+    with open(dest_online_path, "w") as f:
+        f.write(online_content)
+    print(f"  [RAW] Copiado ventas online: {dest_online_path}")
+    
+    # 4. Eventos App
+    app_path = os.path.join(datasets_dir, "eventos_app", f"{day_key}.json")
+    with open(app_path, "r") as f:
+        app_events = json.load(f)
+    dest_app_path = os.path.join(DATA_LAKE_DIR, "raw", "eventos_app", f"{date_str}.json")
+    with open(dest_app_path, "w") as f:
+        json.dump(app_events, f, indent=4)
+    print(f"  [RAW] Copiado eventos app: {dest_app_path}")
+    
+    # 5. Ventas POS (Leemos cada archivo de transacción individual, los consolidamos)
+    pos_day_dir = os.path.join(datasets_dir, "ventas_pos", day_key)
+    pos_dfs = []
+    if os.path.exists(pos_day_dir):
+        for f_name in sorted(os.listdir(pos_day_dir)):
+            if f_name.endswith('.csv'):
+                f_path = os.path.join(pos_day_dir, f_name)
+                df_tx = pd.read_csv(f_path)
+                pos_dfs.append(df_tx)
+                
+    if pos_dfs:
+        df_pos_day = pd.concat(pos_dfs, ignore_index=True)
+        dest_pos_path = os.path.join(DATA_LAKE_DIR, "raw", "ventas_pos", f"{date_str}.csv")
+        df_pos_day.to_csv(dest_pos_path, index=False)
+        print(f"  [RAW] Consolidadas {len(pos_dfs)} transacciones POS individuales en el archivo de día: {dest_pos_path}")
 
 def process_elt(date_str):
     """Proceso ELT: lee crudos, limpia/normaliza y almacena en processed/."""
@@ -417,27 +459,27 @@ if __name__ == "__main__":
     init_postgres_schema()
     
     # 1. Ingesta y Procesamiento Día 1 (2026-04-01)
-    ingest_raw("Día 1", "2026-04-01", DIA1_DATA)
+    ingest_raw_from_datasets("Día 1", "2026-04-01", "dia1")
     process_elt("2026-04-01")
     load_etl_dw("2026-04-01")
     
     # 2. Ingesta y Procesamiento Día 2 (2026-04-02)
-    ingest_raw("Día 2", "2026-04-02", DIA2_DATA)
+    ingest_raw_from_datasets("Día 2", "2026-04-02", "dia2")
     process_elt("2026-04-02")
     load_etl_dw("2026-04-02")
 
     # 3. Ingesta y Procesamiento Día 3 (2026-04-03)
-    ingest_raw("Día 3", "2026-04-03", DIA3_DATA)
+    ingest_raw_from_datasets("Día 3", "2026-04-03", "dia3")
     process_elt("2026-04-03")
     load_etl_dw("2026-04-03")
 
     # 4. Ingesta y Procesamiento Día 4 (2026-04-04)
-    ingest_raw("Día 4", "2026-04-04", DIA4_DATA)
+    ingest_raw_from_datasets("Día 4", "2026-04-04", "dia4")
     process_elt("2026-04-04")
     load_etl_dw("2026-04-04")
 
     # 5. Ingesta y Procesamiento Día 5 (2026-04-05)
-    ingest_raw("Día 5", "2026-04-05", DIA5_DATA)
+    ingest_raw_from_datasets("Día 5", "2026-04-05", "dia5")
     process_elt("2026-04-05")
     load_etl_dw("2026-04-05")
     

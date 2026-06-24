@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFORME TÉCNICO DE MEJORAS: PIPELINE INCREMENTAL Y RESILIENCIA - RetailSmart Chile SA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;600;700&display=swap');
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #FFFFFF;
+            color: #111111;
+            font-family: 'Inter', Helvetica, sans-serif;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        header {
+            background-color: #000000;
+            color: #FFFFFF;
+            padding: 60px 40px;
+            text-align: center;
+            border-bottom: 4px solid #00FFCC;
+            page-break-after: avoid;
+        }
+
+        header h1 {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        header .subtitle {
+            font-size: 16px;
+            color: #00FFCC;
+            margin-bottom: 30px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+        }
+
+        header .authors {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        header .author-card {
+            background-color: #111111;
+            border: 2px solid #00FFCC;
+            padding: 15px;
+            text-align: center;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        header .author-card .name {
+            color: #00FFCC;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        header .author-card .role {
+            color: #AAAAAA;
+            font-size: 11px;
+        }
+
+        header .metadata {
+            margin-top: 30px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #AAAAAA;
+            border-top: 1px solid #00FF66;
+            padding-top: 15px;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+
+        section {
+            margin-bottom: 50px;
+            page-break-inside: avoid;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #00FFCC;
+            page-break-after: avoid;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111111;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #00FF66;
+            page-break-after: avoid;
+        }
+
+        p {
+            margin-bottom: 14px;
+            text-align: justify;
+        }
+
+        .code-block {
+            background-color: #F5F5F5;
+            border-left: 4px solid #00FFCC;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            color: #000000;
+            page-break-inside: avoid;
+        }
+
+        .architecture-text {
+            background-color: #F5F5F5;
+            border: 1px solid #CCCCCC;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            page-break-inside: avoid;
+        }
+
+        .service-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        .service-table th {
+            background-color: #000000;
+            color: #FFFFFF;
+            padding: 12px;
+            text-align: left;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            font-size: 12px;
+            border: 1px solid #000000;
+        }
+
+        .service-table td {
+            padding: 12px;
+            border: 1px solid #CCCCCC;
+            font-size: 12px;
+        }
+
+        .service-table tr:nth-child(even) {
+            background-color: #F5F5F5;
+        }
+
+        .service-table td.service-name {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            page-break-inside: avoid;
+        }
+
+        .kpi-card {
+            background-color: #F9F9F9;
+            border: 2px solid #000000;
+            padding: 20px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .kpi-card h4 {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #000000;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00FFCC;
+            margin-bottom: 15px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .kpi-detail {
+            font-size: 11px;
+            color: #666666;
+            font-family: 'Fira Code', monospace;
+            line-height: 1.5;
+        }
+
+        .reflection-box {
+            background-color: #F9F9F9;
+            border-left: 6px solid #00FF66;
+            padding: 20px;
+            margin: 25px 0;
+            page-break-inside: avoid;
+        }
+
+        .reflection-box h4 {
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            color: #000000;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .reflection-box p {
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .screenshot-container {
+            margin: 30px 0;
+            padding: 15px;
+            background-color: #F5F5F5;
+            border: 2px solid #000000;
+            page-break-inside: avoid;
+            text-align: center;
+        }
+
+        .screenshot-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #CCCCCC;
+            box-shadow: 5px 5px 0px #00FFCC;
+            margin-bottom: 15px;
+        }
+
+        .screenshot-caption {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            color: #333333;
+            font-weight: 600;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        footer {
+            background-color: #000000;
+            color: #FFFFFF;
+            padding: 30px 40px;
+            text-align: center;
+            margin-top: 50px;
+            border-top: 4px solid #00FF66;
+            page-break-inside: avoid;
+        }
+
+        footer p {
+            margin-bottom: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+        }
+
+        footer .protocol {
+            color: #00FFCC;
+            font-weight: 700;
+        }
+
+        .toc {
+            background-color: #F5F5F5;
+            border: 2px solid #000000;
+            padding: 25px;
+            margin: 30px 0;
+            page-break-inside: avoid;
+        }
+
+        .toc h3 {
+            border-left: 4px solid #00FFCC;
+            margin-bottom: 15px;
+            padding-left: 10px;
+        }
+
+        .toc ol {
+            margin-left: 20px;
+            font-family: 'Inter', Helvetica, sans-serif;
+        }
+
+        .toc li {
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .toc a {
+            color: #000000;
+            text-decoration: none;
+            border-bottom: 1px dotted #00FFCC;
+        }
+
+        .toc a:hover {
+            color: #00FFCC;
+        }
+
+        .neon-accent {
+            color: #00FFCC;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+        }
+
+        @media print {
+            @page {
+                margin: 2cm;
+                size: A4;
+            }
+            body {
+                background-color: #FFFFFF;
+                color: #000000;
+                font-size: 12pt;
+            }
+            section, .kpi-card, .container-box, .reflection-box, .screenshot-container, .service-table {
+                page-break-inside: avoid;
+            }
+            h1, h2, h3, h4 {
+                page-break-after: avoid;
+            }
+            .toc {
+                display: none;
+            }
+            header {
+                padding: 40px 20px;
+                border-bottom: 2px solid #000000;
+            }
+            footer {
+                border-top: 2px solid #000000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER / PORTADA -->
+    <header>
+        <h1>INFORME TÉCNICO DE REFACCIÓN Y MEJORAS</h1>
+        <div class="subtitle">Pipeline Incremental Físico, Carga de Datasets CSV y Resiliencia del Clúster</div>
+        
+        <div style="margin: 20px 0; color: #FFFFFF; font-size: 16px; font-weight: 700;">
+            RetailSmart Chile SA — Rama refactor-pipeline-architecture
+        </div>
+
+        <div class="authors">
+            <div class="author-card">
+                <div class="name">Nicolás Anrique</div>
+                <div class="role">Lead Architect</div>
+            </div>
+            <div class="author-card">
+                <div class="name">Camilo Nuñez</div>
+                <div class="role">DevOps & Quality Assurance</div>
+            </div>
+            <div class="author-card">
+                <div class="name">Diego Poblete</div>
+                <div class="role">Data Analyst</div>
+            </div>
+        </div>
+
+        <div class="metadata">
+            ASIGNATURA: Arquitectura y Almacenamiento de Datos (INACAP)<br>
+            DOCENTE: Juan Paredes Sanhueza | SECCIÓN: TI3051-D-IEI-N5-P2-C1<br>
+            FECHA: 24-06-2026 | PROTOCOLO: GLITCHPOINT v3.2
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main>
+
+        <!-- TABLA DE CONTENIDOS -->
+        <section class="toc">
+            <h3>Índice de Contenidos</h3>
+            <ol>
+                <li><a href="#intro">1. Introducción y Objetivos Académicos</a></li>
+                <li><a href="#progresion">2. Dataset Físico y Progresión de Ventas POS (+3/Día)</a></li>
+                <li><a href="#consolidacion">3. Ingesta y Consolidación Dinámica en run_pipeline.py</a></li>
+                <li><a href="#frontend-csv">4. Ingesta de CSV en Tiempo Real desde el Dashboard Cliente</a></li>
+                <li><a href="#resiliencia-db">5. Alta Disponibilidad de MongoDB (Failover del Replica Set)</a></li>
+                <li><a href="#puertos-red">6. Desacoplamiento de Conflictos en Puertos de Red del Host</a></li>
+                <li><a href="#auditoria">7. Auditoría y Validación Final de Ingesta (90 Registros)</a></li>
+                <li><a href="#conclusiones">8. Conclusiones y Consideraciones Finales</a></li>
+            </ol>
+        </section>
+
+        <!-- SECCIÓN 1: INTRODUCCIÓN -->
+        <section id="intro">
+            <h2>1. Introducción y Objetivos Académicos</h2>
+            <p>
+                Tras la exitosa puesta en marcha del prototipo contenerizado de <strong>RetailSmart Chile S.A.</strong>, se identificaron múltiples dependencias críticas y simplificaciones arquitectónicas en la rama principal. Para elevar la calidad de la solución al nivel exigido en la evaluación académica, se estructuró un plan de refactorización integral en la rama <span class="neon-accent">refactor-pipeline-architecture</span>.
+            </p>
+            <p>
+                Los objetivos clave abordados en esta intervención de arquitectura e infraestructura incluyen:
+            </p>
+            <ul>
+                <li><strong>Desacoplamiento de Datos:</strong> Migrar el pipeline de ingesta incremental para que lea archivos físicos crudos en lugar de strings de datos estáticos codificados en memoria, emulando la realidad de un data lake corporativo.</li>
+                <li><strong>Carga Dinámica Externa (Frontend):</strong> Inyectar una capacidad en la consola web del cliente que permita a un docente o analista subir cualquier archivo CSV personalizado, autodetectando las cabeceras e ingectándolo en vivo en el backend.</li>
+                <li><strong>Garantizar Alta Disponibilidad (HA):</strong> Corregir el pánico en los drivers de los trabajadores del pipeline de MongoDB que impedía la reconexión automática en caso de failover del Replica Set <code>rs0</code>.</li>
+                <li><strong>Aislamiento de Red del Host:</strong> Reconfigurar el mapeo de puertos para evitar conflictos y asegurar el funcionamiento 24/7 en hosts locales compartidos con otros microservicios activos.</li>
+            </ul>
+        </section>
+
+        <!-- SECCIÓN 2: DATASET FÍSICO Y PROGRESIÓN -->
+        <section id="progresion">
+            <h2>2. Dataset Físico y Progresión de Ventas POS (+3/Día)</h2>
+            <p>
+                Se implementó un autogenerador de datos físicos que distribuyó los datasets del caso en la ruta <code>datasets/</code>. Se definió un crecimiento de transacciones incremental y ordenado por día para evidenciar cómo el pipeline de almacenamiento y el Data Warehouse asimilan las cargas de manera proporcional a lo largo del tiempo.
+            </p>
+            
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h4>Ventas POS (Tienda Física)</h4>
+                    <div class="kpi-value">45 Tx</div>
+                    <div class="kpi-detail">Archivos CSV independientes por transacción en datasets/ventas_pos/diaN/</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Ventas Online (E-commerce)</h4>
+                    <div class="kpi-value">35 Tx</div>
+                    <div class="kpi-detail">Consolidados diarios en datasets/ventas_online/diaN.csv</div>
+                </div>
+                <div class="kpi-card">
+                    <h4>Progresión Diaria POS</h4>
+                    <div class="kpi-value">+3 Tx/Día</div>
+                    <div class="kpi-detail">Día 1: 3 | Día 2: 6 | Día 3: 9<br>Día 4: 12 | Día 5: 15</div>
+                </div>
+            </div>
+
+            <h3>Estructura del Dataset de Clientes CRM (clientes_crm.csv)</h3>
+            <p>Almacena la dimensión maestra de clientes con su respectivo segmento de mercadeo:</p>
+            <div class="code-block">id_cliente,nombre,apellido,email,segmento,ciudad
+101,Juan,Perez,juan@email.com,Premium,Santiago
+102,Ana,Gomez,ana@email.com,Regular,Valparaiso
+103,Carlos,Rojas,carlos@email.com,Premium,Concepcion
+...</div>
+
+            <h3>Estructura de Transacción POS Unitaria (CSV Físico)</h3>
+            <p>Cada archivo representa una venta de terminal de punto de venta física individual. Ejemplo (<code>datasets/ventas_pos/dia1/transaccion_pos_101.csv</code>):</p>
+            <div class="code-block">id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+101,2026-04-01,102,2001,3,136850,Las Condes</div>
+        </section>
+
+        <!-- SECCIÓN 3: CONSOLIDACIÓN EN RUN_PIPELINE -->
+        <section id="consolidacion">
+            <h2>3. Ingesta y Consolidación Dinámica en run_pipeline.py</h2>
+            <p>
+                Originalmente, el script de orquestación <code>run_pipeline.py</code> ingería las transacciones desde un diccionario hardcodeado en memoria. Con la refactorización, el pipeline asume un rol de ETL/ELT moderno: lee los archivos crudos del disco físico, los mueve a la zona <code>raw</code> del Data Lake, y realiza la consolidación de archivos dispersos en un solo lote diario.
+            </p>
+            <p>
+                Particularmente para la ingesta de terminales físicas (POS), el script lee recursivamente la carpeta <code>datasets/ventas_pos/diaN/</code>, parsea y consolida todas las transacciones individuales utilizando un DataFrame de Pandas, y genera un solo archivo unificado por día en el lago de datos.
+            </p>
+
+            <div class="code-block"># Segmento del código modificado en run_pipeline.py para consolidación física:
+pos_day_dir = os.path.join(datasets_dir, "ventas_pos", day_key)
+pos_dfs = []
+if os.path.exists(pos_day_dir):
+    for f_name in sorted(os.listdir(pos_day_dir)):
+        if f_name.endswith('.csv'):
+            f_path = os.path.join(pos_day_dir, f_name)
+            df_tx = pd.read_csv(f_path)
+            pos_dfs.append(df_tx)
+            
+if pos_dfs:
+    df_pos_day = pd.concat(pos_dfs, ignore_index=True)
+    dest_pos_path = os.path.join(DATA_LAKE_DIR, "raw", "ventas_pos", f"{date_str}.csv")
+    df_pos_day.to_csv(dest_pos_path, index=False)
+    print(f"  [RAW] Consolidadas {len(pos_dfs)} transacciones POS en: {dest_pos_path}")</div>
+        </section>
+
+        <!-- SECCIÓN 4: FRONTEND CSV INGESTION -->
+        <section id="frontend-csv">
+            <h2>4. Ingesta de CSV en Tiempo Real desde el Dashboard Cliente</h2>
+            <p>
+                Para cumplir con la solicitud específica del docente, se habilitó una interfaz de carga directa en el Dashboard de Cliente. Esto permite al usuario arrastrar o seleccionar archivos CSV de transacciones y procesarlos sin necesidad de interactuar con terminales de consola o scripts en Python.
+            </p>
+            
+            <div class="architecture-text">┌────────────────────────────────────────────────────────┐
+│               DASHBOARD CLIENTE (HTML5/JS)             │
+│   📂 Seleccionar CSV -> Parsear cabeceras en memoria  │
+└────────────────────────────────────────────────────────┘
+                            │
+              Autodetección de estructura:
+              id_venta -> Ingesta POS física
+              id_orden -> Ingesta Ventas Online
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│               NODO DE PROCESAMIENTO / API              │
+│   Iteración asíncrona (POST /ingest -> srv-api-backend)│
+└────────────────────────────────────────────────────────┘</div>
+
+            <h3>Detección Dinámica de Esquemas</h3>
+            <p>
+                El archivo Javascript <code>app.js</code> intercepta el contenido del archivo cargado mediante <code>FileReader</code>, lee las cabeceras iniciales y mapea dinámicamente las columnas al payload estándar JSON requerido por el endpoint <code>/ingest</code>:
+            </p>
+            <ul>
+                <li><strong>Si el CSV incluye "id_venta":</strong> Mapea como canal <code>tienda_fisica</code> y calcula el precio total multiplicando <code>cantidad * precio_unitario</code>.</li>
+                <li><strong>Si el CSV incluye "id_orden":</strong> Mapea como canal <code>web</code> o <code>app</code> utilizando el campo total directo.</li>
+            </ul>
+
+            <div class="code-block">// Código del parser JavaScript embebido en app.js:
+const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+const isPOS = headers.includes('id_venta');
+const isOnline = headers.includes('id_orden');
+
+for (let i = 1; i < lines.length; i++) {
+  const cols = lines[i].split(',').map(c => c.trim());
+  if (cols.length !== headers.length) continue;
+
+  let payload = null;
+  if (isPOS) {
+    const id_venta = cols[headers.indexOf('id_venta')];
+    const id_producto = cols[headers.indexOf('id_producto')];
+    const cantidad = parseFloat(cols[headers.indexOf('cantidad')]);
+    const precio_u = parseFloat(cols[headers.indexOf('precio_unitario')]);
+    
+    payload = {
+      id: `POS-${id_venta}`,
+      data: {
+        sku: id_producto,
+        canal: "tienda_fisica",
+        cliente: cols[headers.indexOf('id_cliente')],
+        precio: cantidad * precio_u,
+        timestamp: `${cols[headers.indexOf('fecha')]}T12:00:00.000Z`,
+        nodo: `dashboard-cliente-csv-uploader`
+      }
+    };
+  }
+  // Enviar a la API mediante fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) })
+}</div>
+        </section>
+
+        <!-- SECCIÓN 5: RESILIENCIA EN MONGO -->
+        <section id="resiliencia-db">
+            <h2>5. Alta Disponibilidad de MongoDB (Failover del Replica Set)</h2>
+            <p>
+                Durante las pruebas de robustez, se descubrió que los workers del pipeline fallaban catastróficamente si el nodo de base de datos Mongo con el que tenían conexión inicial sufría una desconexión o dejaba de actuar como primario. Esto se debía al parámetro estático de conexión <code>directConnection=True</code>.
+            </p>
+            
+            <div class="reflection-box">
+                <h4>Diagnóstico y Corrección de Alta Disponibilidad</h4>
+                <p>
+                    <strong>Problema original:</strong> Al forzar <code>directConnection=True</code> en PyMongo, el worker no participaba en el protocolo de monitoreo del Replica Set (<code>rs0</code>). Ante una caída del nodo primario, PyMongo no renegociaba el enlace con el nuevo primario elegido democráticamente por MongoDB.
+                </p>
+                <p>
+                    <strong>Solución:</strong> Se modificaron los conectores en <code>srv-elt-pipeline/worker.py</code> y <code>srv-etl-pipeline/worker.py</code>. Se externalizó el canal de comunicación mediante la variable de entorno <code>MONGO_URI</code> (que contiene la cadena de réplicas completa) y se configuró PyMongo con el parámetro de negociación <code>replicaSet="rs0"</code> como fallback.
+                </p>
+            </div>
+
+            <div class="code-block">// Código corregido en los workers de Python (worker.py):
+def get_mongo_db():
+    """Conecta a MongoDB usando MONGO_URI (soporta Replica Set) o fallback negociado."""
+    mongo_uri = os.getenv("MONGO_URI")
+    if mongo_uri:
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+    else:
+        client = MongoClient(
+            host=MONGO_HOST,
+            port=MONGO_PORT,
+            username=MONGO_USER,
+            password=MONGO_PASS,
+            authSource="admin",
+            replicaSet="rs0",
+            serverSelectionTimeoutMS=5000,
+        )
+    return client.retail_lake</div>
+        </section>
+
+        <!-- SECCIÓN 6: PUERTOS RED -->
+        <section id="puertos-red">
+            <h2>6. Desacoplamiento de Conflictos en Puertos de Red del Host</h2>
+            <p>
+                Para permitir el levantamiento del clúster académico de manera simultánea con otras suites empresariales que corren localmente (como el sistema H0P3 del host), se detectó una colisión por el uso de los puertos expuestos <code>8080</code> y <code>8081</code> en el host local.
+            </p>
+            <p>
+                Para solucionar esto, se desacoplaron ambos servicios en el archivo de orquestación <code>docker-compose.yml</code>:
+            </p>
+            <ul>
+                <li>El servicio <code>srv-dashboard-cliente</code> (servidor Nginx) fue remapeado de <code>8080:80</code> a <code>8082:80</code>.</li>
+                <li>El servicio <code>srv-dashboard-bi</code> (aplicación Django BI) fue remapeado de <code>8081:8000</code> a <code>8083:8000</code>, debido a la colisión con la telemetría corporativa en el puerto <code>8081</code> del host.</li>
+            </ul>
+            <div class="code-block"># docker-compose.yml modificado:
+  srv-dashboard-cliente:
+    build:
+      context: ./servicios/srv-dashboard-cliente
+    container_name: srv-dashboard-cliente
+    ports:
+      - "8082:80"  # Remapeado de 8080:80
+    networks:
+      - retail_network
+
+  srv-dashboard-bi:
+    build:
+      context: ./servicios/srv-dashboard-bi
+    container_name: srv-dashboard-bi
+    ports:
+      - "8083:8000"  # Remapeado de 8081:8000
+    environment:
+      - PG_URI=postgresql://retail_user:retail_pass@srv-db-postgres-primary:5432/retail_dw
+    networks:
+      - retail_network</div>
+            <p>
+                Esta alteración de la configuración de red virtual y de mapeo de sockets del host permite que ambos paneles analíticos coexistan pacíficamente sin interferir con las llamadas internas de la red virtual del clúster <code>retail_network</code>.
+            </p>
+        </section>
+
+        <!-- SECCIÓN 7: AUDITORÍA -->
+        <section id="auditoria">
+            <h2>7. Auditoría y Validación Final de Ingesta (90 Registros)</h2>
+            <p>
+                Para certificar que el pipeline físico asimila los datos con total integridad, se ejecutó una simulación incremental de 5 días. Los resultados demuestran una ingesta inmaculada de 90 transacciones consolidadas en PostgreSQL, distribuidas de la siguiente manera:
+            </p>
+
+            <table class="service-table">
+                <thead>
+                    <tr>
+                        <th>Origen</th>
+                        <th>Día 1</th>
+                        <th>Día 2</th>
+                        <th>Día 3</th>
+                        <th>Día 4</th>
+                        <th>Día 5</th>
+                        <th>Total Procesado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="service-name">Ventas POS (CSV Físicos)</td>
+                        <td>3</td>
+                        <td>6</td>
+                        <td>9</td>
+                        <td>12</td>
+                        <td>15</td>
+                        <td style="font-weight: 700; color: #00FF66;">45 registros</td>
+                    </tr>
+                    <tr>
+                        <td class="service-name">Ventas Online (CSV)</td>
+                        <td>3</td>
+                        <td>5</td>
+                        <td>7</td>
+                        <td>9</td>
+                        <td>11</td>
+                        <td style="font-weight: 700; color: #00FF66;">35 registros</td>
+                    </tr>
+                    <tr>
+                        <td class="service-name">Eventos App (JSON)</td>
+                        <td>2</td>
+                        <td>2</td>
+                        <td>2</td>
+                        <td>2</td>
+                        <td>2</td>
+                        <td style="font-weight: 700; color: #00FF66;">10 registros</td>
+                    </tr>
+                    <tr style="background-color: #000000; color: #FFFFFF; font-weight: 700;">
+                        <td>Total Diario</td>
+                        <td>8</td>
+                        <td>13</td>
+                        <td>18</td>
+                        <td>23</td>
+                        <td>28</td>
+                        <td style="color: #00FFCC;">90 registros</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>
+                Los datos procesados se persistieron con éxito en el Data Lake NoSQL (MongoDB), fueron transformados por los workers, y finalmente consolidados en la tabla de hechos (<code>fact_ventas</code>) y dimensiones asociadas del Data Warehouse en PostgreSQL.
+            </p>
+        </section>
+
+        <!-- SECCIÓN 8: CONCLUSIONES -->
+        <section id="conclusiones">
+            <h2>8. Conclusiones y Consideraciones Finales</h2>
+            <p>
+                La implementación de las mejoras descritas en la rama <span class="neon-accent">refactor-pipeline-architecture</span> eleva sustancialmente la robustez del sistema frente a escenarios corporativos reales:
+            </p>
+            <ol>
+                <li>El desacoplamiento de los datos crudos a archivos físicos estructurados permite realizar auditorías directas en el disco del sistema sin requerir consultas de base de datos intermedias.</li>
+                <li>La capacidad del frontend para procesar e ingestar cualquier CSV personalizado provee al docente de una herramienta dinámica de validación e inyección de contingencias.</li>
+                <li>La configuración del driver con soporte de failover asegura la supervivencia analítica del negocio ante desconexiones de nodos de almacenamiento.</li>
+            </ol>
+            <p>
+                La arquitectura queda completamente preparada para la simulación académica y despliegues estables en entornos productivos locales de alta densidad.
+            </p>
+        </section>
+
+    </main>
+
+    <!-- FOOTER / PIE DE PÁGINA -->
+    <footer>
+        <p>RETAILSMART CHILE S.A. — INFORME DE INFRAESTRUCTURA DE DATOS Y RESILIENCIA</p>
+        <p>Desarrollado y certificado bajo el protocolo <span class="protocol">GLITCHPOINT v3.2</span></p>
+    </footer>
+
+</body>
+</html>

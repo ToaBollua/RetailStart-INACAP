@@ -1,0 +1,38 @@
+[
+    {
+        "id_evento": 5,
+        "id_cliente": 101,
+        "tipo": "click",
+        "producto": 2004
+    },
+    {
+        "id_evento": 6,
+        "id_cliente": 106,
+        "tipo": "compra",
+        "producto": 2007
+    },
+    {
+        "id_evento": 7,
+        "id_cliente": 102,
+        "tipo": "compra",
+        "producto": 2004
+    },
+    {
+        "id_evento": 8,
+        "id_cliente": 104,
+        "tipo": "favorito",
+        "producto": 2008
+    },
+    {
+        "id_evento": 9,
+        "id_cliente": 108,
+        "tipo": "compra",
+        "producto": 2003
+    },
+    {
+        "id_evento": 10,
+        "id_cliente": 103,
+        "tipo": "compra",
+        "producto": 2004
+    }
+]
