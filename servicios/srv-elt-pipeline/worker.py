@@ -22,16 +22,20 @@ signal.signal(signal.SIGTERM, handle_sigterm)
 signal.signal(signal.SIGINT, handle_sigterm)
 
 def get_mongo_db():
-    """Crea una conexión directa al nodo primary, sin negociación de ReplicaSet."""
-    client = MongoClient(
-        host=MONGO_HOST,
-        port=MONGO_PORT,
-        username=MONGO_USER,
-        password=MONGO_PASS,
-        authSource="admin",
-        directConnection=True,
-        serverSelectionTimeoutMS=5000,
-    )
+    """Conecta a MongoDB usando MONGO_URI (soporta Replica Set) o fallback negociado."""
+    mongo_uri = os.getenv("MONGO_URI")
+    if mongo_uri:
+        client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+    else:
+        client = MongoClient(
+            host=MONGO_HOST,
+            port=MONGO_PORT,
+            username=MONGO_USER,
+            password=MONGO_PASS,
+            authSource="admin",
+            replicaSet="rs0",
+            serverSelectionTimeoutMS=5000,
+        )
     return client.retail_lake
 
 def run():

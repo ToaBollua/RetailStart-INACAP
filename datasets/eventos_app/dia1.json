@@ -1,0 +1,20 @@
+[
+    {
+        "id_evento": 2,
+        "id_cliente": 101,
+        "tipo": "favorito",
+        "producto": 2003
+    },
+    {
+        "id_evento": 3,
+        "id_cliente": 106,
+        "tipo": "busqueda",
+        "producto": 2005
+    },
+    {
+        "id_evento": 4,
+        "id_cliente": 104,
+        "tipo": "click",
+        "producto": 2006
+    }
+]

@@ -1,0 +1,56 @@
+[
+    {
+        "id_evento": 11,
+        "id_cliente": 104,
+        "tipo": "busqueda",
+        "producto": 2009
+    },
+    {
+        "id_evento": 12,
+        "id_cliente": 105,
+        "tipo": "compra",
+        "producto": 2007
+    },
+    {
+        "id_evento": 13,
+        "id_cliente": 108,
+        "tipo": "favorito",
+        "producto": 2009
+    },
+    {
+        "id_evento": 14,
+        "id_cliente": 102,
+        "tipo": "busqueda",
+        "producto": 2004
+    },
+    {
+        "id_evento": 15,
+        "id_cliente": 102,
+        "tipo": "click",
+        "producto": 2006
+    },
+    {
+        "id_evento": 16,
+        "id_cliente": 110,
+        "tipo": "busqueda",
+        "producto": 2009
+    },
+    {
+        "id_evento": 17,
+        "id_cliente": 110,
+        "tipo": "click",
+        "producto": 2004
+    },
+    {
+        "id_evento": 18,
+        "id_cliente": 102,
+        "tipo": "busqueda",
+        "producto": 2001
+    },
+    {
+        "id_evento": 19,
+        "id_cliente": 102,
+        "tipo": "compra",
+        "producto": 2001
+    }
+]

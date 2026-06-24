@@ -134,7 +134,7 @@ services:
       context: ./servicios/srv-dashboard-cliente
     container_name: srv-dashboard-cliente
     ports:
-      - "8080:80"
+      - "8082:80"
     networks:
       - retail_network
     logging: *default-logging
