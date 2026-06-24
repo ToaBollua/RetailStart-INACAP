@@ -206,6 +206,17 @@
         ⚡ EJECUTAR TRANSACCIÓN
       </button>
 
+      <!-- CARGA DE ARCHIVOS DATASET CSV -->
+      <div class="pt-4 border-t border-neon/10 space-y-3">
+        <label class="font-mono text-xs text-gray-500 block mb-1">INGESTAR ARCHIVO DATASET (CSV)</label>
+        <div class="flex gap-2">
+          <input type="file" id="csv-file" accept=".csv" class="hidden" />
+          <button id="btn-select-file" class="flex-1 btn-execute py-2 text-xs">📂 SELECCIONAR CSV</button>
+          <button id="btn-upload-csv" class="flex-1 btn-execute py-2 text-xs" disabled>⚡ PROCESAR Y ENVIAR</button>
+        </div>
+        <div id="file-status" class="font-mono text-[10px] text-gray-600 truncate">Ningún archivo cargado.</div>
+      </div>
+
       <!-- STATS RÁPIDOS -->
       <div class="grid grid-cols-3 gap-3 pt-2 border-t border-neon/10">
         <div class="text-center">

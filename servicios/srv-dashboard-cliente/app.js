@@ -117,3 +117,139 @@ document.getElementById('btn-transact').addEventListener('click', async () => {
     updateStats();
   }
 });
+
+// --- CARGA DE ARCHIVO CSV Y PARSING ---
+const fileInput = document.getElementById('csv-file');
+const selectBtn = document.getElementById('btn-select-file');
+const uploadBtn = document.getElementById('btn-upload-csv');
+const statusDiv = document.getElementById('file-status');
+
+selectBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    statusDiv.textContent = `Archivo: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+    statusDiv.style.color = '#00FFCC';
+    uploadBtn.disabled = false;
+    log(`[INFO] Archivo cargado listo para procesamiento: ${file.name}`, 'warn');
+  } else {
+    statusDiv.textContent = 'Ningún archivo cargado.';
+    statusDiv.style.color = '';
+    uploadBtn.disabled = true;
+  }
+});
+
+uploadBtn.addEventListener('click', () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const text = e.target.result;
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+    
+    if (lines.length <= 1) {
+      log('[ERROR] El archivo está vacío o no contiene datos válidos.', 'error');
+      return;
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    log(`[CSV] Detectadas cabeceras: [${headers.join(', ')}]`, 'info');
+
+    // Identificar el tipo de dataset (POS o WEB)
+    const isPOS = headers.includes('id_venta');
+    const isOnline = headers.includes('id_orden');
+
+    if (!isPOS && !isOnline) {
+      log('[ERROR] Cabeceras no compatibles. Se requiere "id_venta" (POS) o "id_orden" (Online).', 'error');
+      return;
+    }
+
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = '⏳ TRANSMITIENDO...';
+    log(`[CSV] Iniciando ingesta por lotes de ${lines.length - 1} transacciones...`, 'warn');
+
+    let processedCount = 0;
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim());
+      if (cols.length !== headers.length) continue;
+
+      let payload = null;
+      if (isPOS) {
+        const id_venta = cols[headers.indexOf('id_venta')];
+        const fecha = cols[headers.indexOf('fecha')];
+        const id_cliente = cols[headers.indexOf('id_cliente')];
+        const id_producto = cols[headers.indexOf('id_producto')];
+        const cantidad = parseFloat(cols[headers.indexOf('cantidad')]);
+        const precio_u = parseFloat(cols[headers.indexOf('precio_unitario')]);
+        const tienda = cols[headers.indexOf('tienda')];
+        
+        payload = {
+          id: `POS-${id_venta}`,
+          data: {
+            sku: id_producto,
+            canal: "tienda_fisica",
+            cliente: id_cliente,
+            precio: cantidad * precio_u,
+            timestamp: `${fecha}T12:00:00.000Z`,
+            nodo: `dashboard-cliente-csv-uploader`
+          }
+        };
+      } else if (isOnline) {
+        const id_orden = cols[headers.indexOf('id_orden')];
+        const fecha = cols[headers.indexOf('fecha')];
+        const id_cliente = cols[headers.indexOf('id_cliente')];
+        const total = parseFloat(cols[headers.indexOf('total')]);
+        const canal = cols[headers.indexOf('canal')];
+
+        payload = {
+          id: `WEB-${id_orden}`,
+          data: {
+            sku: "Desconocido",
+            canal: canal,
+            cliente: id_cliente,
+            precio: total,
+            timestamp: `${fecha}T12:00:00.000Z`,
+            nodo: `dashboard-cliente-csv-uploader`
+          }
+        };
+      }
+
+      if (payload) {
+        stats.total++;
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (res.ok) {
+            stats.ok++;
+            successCount++;
+          } else {
+            stats.err++;
+            errorCount++;
+          }
+        } catch (err) {
+          stats.err++;
+          errorCount++;
+        }
+        processedCount++;
+        updateStats();
+      }
+    }
+
+    log(`[SUCCESS] Ingesta CSV finalizada. Procesados: ${processedCount} | Éxito: ${successCount} | Errores: ${errorCount}`, 'success');
+    uploadBtn.textContent = '⚡ PROCESAR Y ENVIAR';
+    uploadBtn.disabled = false;
+    fileInput.value = '';
+    statusDiv.textContent = 'Ningún archivo cargado.';
+    statusDiv.style.color = '';
+  };
+
+  reader.readAsText(file);
+});
