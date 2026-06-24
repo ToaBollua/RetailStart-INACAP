@@ -255,17 +255,19 @@ def interactive_picker():
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 def main():
+    global DELAY_MS  # declarar primero antes de cualquier referencia
+
+    _default_delay = DELAY_MS
     parser = argparse.ArgumentParser(description="RetailSmart CSV CLI Dashboard")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--file", metavar="PATH", help="Cargar un archivo CSV específico")
     group.add_argument("--dir",  metavar="DIR",  help="Cargar todos los CSV de un directorio")
     group.add_argument("--day",  metavar="DIA",  help="Cargar todos los CSV del día (ej: dia1)")
     group.add_argument("--all",  action="store_true", help="Cargar los 5 días completos")
-    parser.add_argument("--delay", type=int, default=DELAY_MS, help=f"Delay entre requests en ms (default: {DELAY_MS})")
+    parser.add_argument("--delay", type=int, default=_default_delay, help=f"Delay entre requests en ms (default: {_default_delay})")
     parser.add_argument("--quiet", action="store_true", help="Modo silencioso (solo resumen final)")
     args = parser.parse_args()
 
-    global DELAY_MS
     DELAY_MS = args.delay
 
     header()
