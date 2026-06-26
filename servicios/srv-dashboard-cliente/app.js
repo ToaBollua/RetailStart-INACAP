@@ -269,7 +269,7 @@ document.getElementById('btn-clear-queue').addEventListener('click', () => {
 });
 
 // ── Parser CSV → payload ──
-function parseCSVText(text) {
+function parseCSVText(text, fileName) {
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
   if (lines.length <= 1) return null;
 
@@ -278,13 +278,23 @@ function parseCSVText(text) {
   const isOnline = headers.includes('id_orden');
   if (!isPOS && !isOnline) return null;
 
+  // Inferir fecha basada en el nombre del archivo
+  let dateOverride = null;
+  const nameLower = (fileName || "").toLowerCase();
+  if (nameLower.includes("dia1") || nameLower.includes("dia_1")) dateOverride = "2026-04-01";
+  else if (nameLower.includes("dia2") || nameLower.includes("dia_2")) dateOverride = "2026-04-02";
+  else if (nameLower.includes("dia3") || nameLower.includes("dia_3")) dateOverride = "2026-04-03";
+  else if (nameLower.includes("dia4") || nameLower.includes("dia_4")) dateOverride = "2026-04-04";
+  else if (nameLower.includes("dia5") || nameLower.includes("dia_5")) dateOverride = "2026-04-05";
+
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = lines[i].split(',').map(c => c.trim());
     if (cols.length !== headers.length) continue;
     if (isPOS) {
       const id_venta = cols[headers.indexOf('id_venta')];
-      const fecha    = cols[headers.indexOf('fecha')];
+      const parsedFecha = cols[headers.indexOf('fecha')] || new Date().toISOString().split('T')[0];
+      const fecha = dateOverride || parsedFecha;
       const id_cli   = cols[headers.indexOf('id_cliente')];
       const id_prod  = cols[headers.indexOf('id_producto')];
       const cantidad = parseFloat(cols[headers.indexOf('cantidad')]);
@@ -292,7 +302,8 @@ function parseCSVText(text) {
       rows.push({ id: `POS-${id_venta}`, sku: id_prod, canal: 'tienda_fisica', cliente: id_cli, precio: cantidad * precio_u, timestamp: `${fecha}T12:00:00.000Z` });
     } else {
       const id_orden = cols[headers.indexOf('id_orden')];
-      const fecha    = cols[headers.indexOf('fecha')];
+      const parsedFecha = cols[headers.indexOf('fecha')] || new Date().toISOString().split('T')[0];
+      const fecha = dateOverride || parsedFecha;
       const id_cli   = cols[headers.indexOf('id_cliente')];
       const total    = parseFloat(cols[headers.indexOf('total')]);
       const canal    = cols[headers.indexOf('canal')];
@@ -340,7 +351,7 @@ uploadBtn.addEventListener('click', async () => {
       reader.readAsText(file);
     });
 
-    const parsed = parseCSVText(text);
+    const parsed = parseCSVText(text, file.name);
     if (!parsed) {
       log(`[ERR] ${file.name}: cabeceras inválidas (se requiere id_venta o id_orden). Saltando.`, 'error');
       setFileBadge(fi, 'error');

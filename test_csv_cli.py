@@ -135,9 +135,23 @@ def detect_type(headers: list):
         return "ONLINE"
     return None
 
-def parse_row_pos(row: dict):
+def infer_date(filepath: Path) -> str:
+    path_str = str(filepath).lower()
+    if "dia1" in path_str or "dia_1" in path_str:
+        return "2026-04-01"
+    elif "dia2" in path_str or "dia_2" in path_str:
+        return "2026-04-02"
+    elif "dia3" in path_str or "dia_3" in path_str:
+        return "2026-04-03"
+    elif "dia4" in path_str or "dia_4" in path_str:
+        return "2026-04-04"
+    elif "dia5" in path_str or "dia_5" in path_str:
+        return "2026-04-05"
+    return None
+
+def parse_row_pos(row: dict, date_override=None):
     id_venta = row.get("id_venta", "?")
-    fecha    = row.get("fecha", "2026-01-01")
+    fecha    = date_override if date_override else row.get("fecha", "2026-01-01")
     id_cli   = row.get("id_cliente", "?")
     id_prod  = row.get("id_producto", "?")
     cantidad = float(row.get("cantidad", 1))
@@ -156,9 +170,9 @@ def parse_row_pos(row: dict):
         }
     }
 
-def parse_row_online(row: dict):
+def parse_row_online(row: dict, date_override=None):
     id_orden = row.get("id_orden", "?")
-    fecha    = row.get("fecha", "2026-01-01")
+    fecha    = date_override if date_override else row.get("fecha", "2026-01-01")
     id_cli   = row.get("id_cliente", "?")
     total    = float(row.get("total", 0))
     canal    = row.get("canal", "web")
@@ -180,6 +194,8 @@ def ingest_file(filepath: Path, stats: dict, verbose=True):
         log(f"Archivo no encontrado: {filepath}", "ERR")
         return
 
+    date_override = infer_date(filepath)
+
     with open(filepath, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         headers_lower = [h.strip().lower() for h in (reader.fieldnames or [])]
@@ -192,12 +208,12 @@ def ingest_file(filepath: Path, stats: dict, verbose=True):
         rows = list(reader)
 
     if verbose:
-        log(f"Abriendo {neon(filepath.name)} | tipo={cyan(csv_type)} | filas={len(rows)}", "INFO")
+        log(f"Abriendo {neon(filepath.name)} | tipo={cyan(csv_type)} | filas={len(rows)} | override_fecha={yellow(str(date_override))}", "INFO")
 
     for i, raw_row in enumerate(rows):
         # Normalizar keys a lowercase
         row = {k.strip().lower(): v.strip() for k, v in raw_row.items()}
-        payload = parse_row_pos(row) if csv_type == "POS" else parse_row_online(row)
+        payload = parse_row_pos(row, date_override) if csv_type == "POS" else parse_row_online(row, date_override)
         tx_id   = payload["id"]
         precio  = payload["data"]["precio"]
 

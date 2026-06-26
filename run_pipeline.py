@@ -103,7 +103,7 @@ DIA1_DATA = {
 102,Ana,Gomez,ana@email.com,Regular,Valparaiso""",
     "ventas_online": """id_orden,fecha,id_cliente,total,canal
 5001,2026-04-01,101,300000,web
-5002,2026-04-02,103,50000,web""",
+5002,2026-04-01,103,50000,web""",
     "eventos_app": [
         {"id_evento":1,"id_cliente":101,"tipo":"click","producto":2001},
         {"id_evento":2,"id_cliente":102,"tipo":"busqueda","producto":2002}
@@ -121,7 +121,7 @@ DIA2_DATA = {
 103,Carlos,Rojas,carlos@email.com,Premium,Concepcion
 104,Maria,Lopez,maria@email.com,Nuevo,Santiago""",
     "ventas_online": """id_orden,fecha,id_cliente,total,canal
-5003,2026-04-03,104,60000,app""",
+5003,2026-04-02,104,60000,app""",
     "eventos_app": [
         {"id_evento":3,"id_cliente":103,"tipo":"click","producto":2003},
         {"id_evento":4,"id_cliente":104,"tipo":"compra","producto":2004}
@@ -140,7 +140,7 @@ DIA3_DATA = {
 106,Laura,Martinez,laura@email.com,Premium,Santiago""",
     "ventas_online": """id_orden,fecha,id_cliente,total,canal
 5004,2026-04-03,105,300000,web
-5005,2026-04-04,106,80000,app""",
+5005,2026-04-03,106,80000,app""",
     "eventos_app": [
         {"id_evento":5,"id_cliente":105,"tipo":"click","producto":2002},
         {"id_evento":6,"id_cliente":106,"tipo":"busqueda","producto":2005}
@@ -159,7 +159,7 @@ DIA4_DATA = {
 108,Sofia,Reyes,sofia@email.com,Regular,Santiago""",
     "ventas_online": """id_orden,fecha,id_cliente,total,canal
 5006,2026-04-04,107,100000,web
-5007,2026-04-05,108,120000,app""",
+5007,2026-04-04,108,120000,app""",
     "eventos_app": [
         {"id_evento":7,"id_cliente":107,"tipo":"click","producto":2003},
         {"id_evento":8,"id_cliente":108,"tipo":"compra","producto":2006}
@@ -209,14 +209,13 @@ def ingest_raw_from_datasets(day_name, date_str, day_key):
         f.write(prod_content)
     print(f"  [RAW] Copiado productos erp: {dest_prod_path}")
     
-    # 3. Ventas Online
+    # 3. Ventas Online (Forzar fecha a date_str)
     online_path = os.path.join(datasets_dir, "ventas_online", f"{day_key}.csv")
-    with open(online_path, "r") as f:
-        online_content = f.read()
+    df_online = pd.read_csv(online_path)
+    df_online["fecha"] = date_str
     dest_online_path = os.path.join(DATA_LAKE_DIR, "raw", "ventas_online", f"{date_str}.csv")
-    with open(dest_online_path, "w") as f:
-        f.write(online_content)
-    print(f"  [RAW] Copiado ventas online: {dest_online_path}")
+    df_online.to_csv(dest_online_path, index=False)
+    print(f"  [RAW] Escritas ventas online con fecha {date_str}: {dest_online_path}")
     
     # 4. Eventos App
     app_path = os.path.join(datasets_dir, "eventos_app", f"{day_key}.json")
@@ -227,7 +226,7 @@ def ingest_raw_from_datasets(day_name, date_str, day_key):
         json.dump(app_events, f, indent=4)
     print(f"  [RAW] Copiado eventos app: {dest_app_path}")
     
-    # 5. Ventas POS (Leemos cada archivo de transacción individual, los consolidamos)
+    # 5. Ventas POS (Leemos cada archivo de transacción individual, los consolidamos y forzamos fecha a date_str)
     pos_day_dir = os.path.join(datasets_dir, "ventas_pos", day_key)
     pos_dfs = []
     if os.path.exists(pos_day_dir):
@@ -239,9 +238,10 @@ def ingest_raw_from_datasets(day_name, date_str, day_key):
                 
     if pos_dfs:
         df_pos_day = pd.concat(pos_dfs, ignore_index=True)
+        df_pos_day["fecha"] = date_str
         dest_pos_path = os.path.join(DATA_LAKE_DIR, "raw", "ventas_pos", f"{date_str}.csv")
         df_pos_day.to_csv(dest_pos_path, index=False)
-        print(f"  [RAW] Consolidadas {len(pos_dfs)} transacciones POS individuales en el archivo de día: {dest_pos_path}")
+        print(f"  [RAW] Consolidadas {len(pos_dfs)} transacciones POS con fecha {date_str} en: {dest_pos_path}")
 
 def process_elt(date_str):
     """Proceso ELT: lee crudos, limpia/normaliza y almacena en processed/."""
