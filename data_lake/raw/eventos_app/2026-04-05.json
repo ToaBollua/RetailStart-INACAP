@@ -1,0 +1,80 @@
+[
+    {
+        "id_evento": 43,
+        "id_cliente": 107,
+        "tipo": "click",
+        "producto": 2005
+    },
+    {
+        "id_evento": 44,
+        "id_cliente": 102,
+        "tipo": "busqueda",
+        "producto": 2008
+    },
+    {
+        "id_evento": 45,
+        "id_cliente": 120,
+        "tipo": "busqueda",
+        "producto": 2003
+    },
+    {
+        "id_evento": 46,
+        "id_cliente": 114,
+        "tipo": "compra",
+        "producto": 2007
+    },
+    {
+        "id_evento": 47,
+        "id_cliente": 123,
+        "tipo": "busqueda",
+        "producto": 2013
+    },
+    {
+        "id_evento": 48,
+        "id_cliente": 113,
+        "tipo": "click",
+        "producto": 2008
+    },
+    {
+        "id_evento": 49,
+        "id_cliente": 121,
+        "tipo": "click",
+        "producto": 2001
+    },
+    {
+        "id_evento": 50,
+        "id_cliente": 125,
+        "tipo": "click",
+        "producto": 2014
+    },
+    {
+        "id_evento": 51,
+        "id_cliente": 106,
+        "tipo": "busqueda",
+        "producto": 2017
+    },
+    {
+        "id_evento": 52,
+        "id_cliente": 102,
+        "tipo": "click",
+        "producto": 2018
+    },
+    {
+        "id_evento": 53,
+        "id_cliente": 104,
+        "tipo": "click",
+        "producto": 2015
+    },
+    {
+        "id_evento": 54,
+        "id_cliente": 115,
+        "tipo": "compra",
+        "producto": 2017
+    },
+    {
+        "id_evento": 55,
+        "id_cliente": 120,
+        "tipo": "busqueda",
+        "producto": 2011
+    }
+]

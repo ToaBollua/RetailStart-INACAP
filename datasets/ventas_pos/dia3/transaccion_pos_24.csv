@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+24,2026-04-03,108,2003,1,30000,Puente Alto

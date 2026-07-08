@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+151,2026-04-10,101,2006,1,100000,La Florida

@@ -1,0 +1,104 @@
+[
+    {
+        "id_evento": 101,
+        "id_cliente": 104,
+        "tipo": "click",
+        "producto": 2004
+    },
+    {
+        "id_evento": 102,
+        "id_cliente": 118,
+        "tipo": "busqueda",
+        "producto": 2005
+    },
+    {
+        "id_evento": 103,
+        "id_cliente": 115,
+        "tipo": "compra",
+        "producto": 2012
+    },
+    {
+        "id_evento": 104,
+        "id_cliente": 124,
+        "tipo": "busqueda",
+        "producto": 2018
+    },
+    {
+        "id_evento": 105,
+        "id_cliente": 119,
+        "tipo": "busqueda",
+        "producto": 2005
+    },
+    {
+        "id_evento": 106,
+        "id_cliente": 121,
+        "tipo": "busqueda",
+        "producto": 2004
+    },
+    {
+        "id_evento": 107,
+        "id_cliente": 120,
+        "tipo": "busqueda",
+        "producto": 2014
+    },
+    {
+        "id_evento": 108,
+        "id_cliente": 102,
+        "tipo": "click",
+        "producto": 2012
+    },
+    {
+        "id_evento": 109,
+        "id_cliente": 115,
+        "tipo": "click",
+        "producto": 2015
+    },
+    {
+        "id_evento": 110,
+        "id_cliente": 112,
+        "tipo": "compra",
+        "producto": 2004
+    },
+    {
+        "id_evento": 111,
+        "id_cliente": 112,
+        "tipo": "compra",
+        "producto": 2018
+    },
+    {
+        "id_evento": 112,
+        "id_cliente": 112,
+        "tipo": "busqueda",
+        "producto": 2002
+    },
+    {
+        "id_evento": 113,
+        "id_cliente": 109,
+        "tipo": "click",
+        "producto": 2007
+    },
+    {
+        "id_evento": 114,
+        "id_cliente": 115,
+        "tipo": "compra",
+        "producto": 2003
+    },
+    {
+        "id_evento": 115,
+        "id_cliente": 107,
+        "tipo": "click",
+        "producto": 2001
+    },
+    {
+        "id_evento": 116,
+        "id_cliente": 111,
+        "tipo": "click",
+        "producto": 2008
+    },
+    {
+        "id_evento": 117,
+        "id_cliente": 119,
+        "tipo": "click",
+        "producto": 2007
+    }
+]

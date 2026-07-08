@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+65,2026-04-06,103,2010,2,25000,Las Condes

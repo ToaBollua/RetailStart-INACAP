@@ -18,6 +18,8 @@ services:
       - MONGODB_REPLICA_SET_KEY=replicasetkey123
     volumes:
       - mongo_primary_data:/bitnami/mongodb
+    ports:
+      - "27018:27017"
     networks:
       - retail_network
     healthcheck:
@@ -58,6 +60,8 @@ services:
       - POSTGRESQL_DATABASE=retail_dw
     volumes:
       - pg_primary_data:/bitnami/postgresql
+    ports:
+      - "5434:5432"
     networks:
       - retail_network
     healthcheck:
@@ -168,6 +172,38 @@ services:
       - ./backups:/backups
       - mongo_primary_data:/data/mongo:ro
       - pg_primary_data:/data/postgres:ro
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  # --- EXPLORADORES VISUALES DE BASES DE DATOS ---
+  srv-db-adminer:
+    image: adminer:latest
+    container_name: srv-db-adminer
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./servicios/srv-db-adminer/index.php:/var/www/html/index.php
+      - ./servicios/srv-db-adminer/adminer.css:/var/www/html/adminer.css
+      - ./servicios/srv-db-adminer/my_custom_adminer.php:/var/www/html/my_custom_adminer.php
+    networks:
+      - retail_network
+    logging: *default-logging
+
+  srv-db-mongo-express:
+    image: mongo-express:latest
+    container_name: srv-db-mongo-express
+    ports:
+      - "8086:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=rootpass
+      - ME_CONFIG_MONGODB_URL=mongodb://root:rootpass@srv-db-mongo-primary:27017/?replicaSet=rs0&authSource=admin
+      - ME_CONFIG_BASICAUTH=false
+
+    depends_on:
+      srv-db-mongo-primary:
+        condition: service_healthy
     networks:
       - retail_network
     logging: *default-logging

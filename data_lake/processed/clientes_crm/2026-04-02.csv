@@ -1,0 +1,26 @@
+id_cliente,nombre,apellido,email,segmento,ciudad
+101,Juan,Pérez,juan.perez@email.com,Premium,Santiago
+102,Ana,Gómez,ana.gomez@email.com,Regular,Valparaíso
+103,Carlos,Rojas,carlos.rojas@email.com,Premium,Concepción
+104,María,López,maria.lopez@email.com,Nuevo,Santiago
+105,Pedro,Díaz,pedro.diaz@email.com,Regular,Temuco
+106,Laura,Martínez,laura.martinez@email.com,Premium,Santiago
+107,Diego,Soto,diego.soto@email.com,Nuevo,Antofagasta
+108,Sofía,Reyes,sofia.reyes@email.com,Regular,Santiago
+109,Andrés,Castro,andres.castro@email.com,Premium,La Serena
+110,Camila,Vega,camila.vega@email.com,Nuevo,Santiago
+111,José,Muñoz,jose.munoz@email.com,Regular,Rancagua
+112,Francisca,Silva,francisca.silva@email.com,Premium,Viña del Mar
+113,Luis,Pizarro,luis.pizarro@email.com,Regular,Concepción
+114,Valentina,Herrera,valentina.herrera@email.com,Premium,Santiago
+115,Manuel,Flores,manuel.flores@email.com,Nuevo,Talca
+116,Constanza,Morales,constanza.morales@email.com,Regular,Santiago
+117,Javier,Fuentes,javier.fuentes@email.com,Premium,Iquique
+118,Antonia,Valenzuela,antonia.valenzuela@email.com,Nuevo,Chillán
+119,Francisco,Araya,francisco.araya@email.com,Regular,Santiago
+120,Catalina,Carrasco,catalina.carrasco@email.com,Premium,Puerto Montt
+121,Gabriel,Alvarez,gabriel.alvarez@email.com,Regular,Santiago
+122,Ignacia,Contreras,ignacia.contreras@email.com,Nuevo,Valparaíso
+123,Felipe,Sepúlveda,felipe.sepulveda@email.com,Premium,Concepción
+124,Javiera,Muñoz,javiera.munoz@email.com,Regular,Temuco
+125,Christian,Pardo,christian.pardo@email.com,Premium,Santiago

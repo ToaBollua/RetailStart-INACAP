@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+160,2026-04-10,111,2005,1,70000,Providencia

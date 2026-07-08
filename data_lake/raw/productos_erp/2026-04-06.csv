@@ -1,0 +1,19 @@
+id_producto,nombre_producto,categoria,precio_base,proveedor
+2001,Notebook Lenovo,Tecnología,140000,Lenovo
+2002,Smartphone Samsung,Tecnología,280000,Samsung
+2003,Polera Hombre,Vestuario,30000,Nike
+2004,Silla Oficina,Hogar,15000,Ikea
+2005,Audífonos Sony,Tecnología,70000,Sony
+2006,Tablet Huawei,Tecnología,100000,Huawei
+2007,Zapatos Mujer,Vestuario,50000,Adidas
+2008,Microondas,Hogar,80000,LG
+2009,Monitor,Tecnología,120000,Dell
+2010,Mochila,Vestuario,25000,Puma
+2011,Teclado Mecánico,Tecnología,35000,HyperX
+2012,Mouse Gamer,Tecnología,20000,Logitech
+2013,Mesa Escritorio,Hogar,45000,Ikea
+2014,Lámpara LED,Hogar,12000,Philips
+2015,Casaca Térmica,Vestuario,60000,Columbia
+2016,Smartwatch Xiaomi,Tecnología,45000,Xiaomi
+2017,Aspiradora Robot,Hogar,130000,Eufy
+2018,Zapatillas Running,Vestuario,75000,Nike

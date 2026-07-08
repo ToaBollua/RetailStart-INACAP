@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+16,2026-04-02,105,2008,3,80000,Valparaíso

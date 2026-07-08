@@ -221,10 +221,15 @@
 </head>
 <body>
   <div class="scanline"></div>
-
   <header>
     <div class="brand">H0P3 BI <span>// RetailSmart Chile SA</span></div>
     <div class="header-right">
+      <a href="/analytics/export/csv/" style="font-family:'Fira Code',monospace;font-size:0.72rem;color:var(--neon);text-decoration:none;border:1px solid var(--neon);padding:4px 10px;transition:all 0.2s;"
+         onmouseover="this.style.background='rgba(0,255,65,0.1)'"
+         onmouseout="this.style.background='transparent'">[EXPORTAR CSV]</a>
+      <a href="/analytics/export/json/" style="font-family:'Fira Code',monospace;font-size:0.72rem;color:var(--neon);text-decoration:none;border:1px solid var(--neon);padding:4px 10px;transition:all 0.2s;"
+         onmouseover="this.style.background='rgba(0,255,65,0.1)'"
+         onmouseout="this.style.background='transparent'">[EXPORTAR JSON]</a>
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="status-dot {% if db_status == 'ONLINE' %}{% else %}" style="background:#FF4444;box-shadow:0 0 8px #FF4444;{% endif %}"></div>
         <span class="status-label">DW {{ db_status }}</span>
@@ -240,26 +245,95 @@
     {% if db_error %}
     <div class="err-banner">
       ⚠ DB_ERROR: {{ db_error }}<br/>
-      <span style="color:var(--dim);">Asegúrate de que el Data Warehouse Postgres esté activo y el esquema <code>fact_events</code> exista.</span>
+      <span style="color:var(--dim);">Asegúrate de que el Data Warehouse Postgres esté activo y el esquema <code>fact_ventas</code> exista.</span>
     </div>
     {% endif %}
 
+    <!-- PANEL DE BÚSQUEDAS Y FILTROS CRUZADOS -->
+    <div class="chart-panel" style="margin-bottom:20px; padding:18px; border:1px solid rgba(0,255,65,0.18);">
+      <div class="chart-title">// Panel de Búsquedas Cruzadas y Análisis Multidimensional</div>
+      <div class="chart-subtitle">Consulta cruzando dimensiones (tiempo, canal, tienda, cliente) para auditoría de negocio</div>
+      
+      <form method="GET" action="" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-top:15px; align-items: end;">
+        <div>
+          <label style="font-family:'Fira Code',monospace; font-size:0.68rem; color:var(--dim); display:block; margin-bottom:4px;">Fecha Inicio</label>
+          <input type="date" name="start_date" value="{{ start_date|default:'2026-04-01' }}" style="width:100%; box-sizing:border-box; background:#030d03; border:1px solid rgba(0,255,65,0.3); color:var(--neon); font-family:'Fira Code',monospace; font-size:0.75rem; padding:4px 6px;">
+        </div>
+        <div>
+          <label style="font-family:'Fira Code',monospace; font-size:0.68rem; color:var(--dim); display:block; margin-bottom:4px;">Fecha Fin</label>
+          <input type="date" name="end_date" value="{{ end_date|default:'2026-04-10' }}" style="width:100%; box-sizing:border-box; background:#030d03; border:1px solid rgba(0,255,65,0.3); color:var(--neon); font-family:'Fira Code',monospace; font-size:0.75rem; padding:4px 6px;">
+        </div>
+        <div>
+          <label style="font-family:'Fira Code',monospace; font-size:0.68rem; color:var(--dim); display:block; margin-bottom:4px;">Canal de Venta</label>
+          <select name="canal" style="width:100%; box-sizing:border-box; background:#030d03; border:1px solid rgba(0,255,65,0.3); color:var(--neon); font-family:'Fira Code',monospace; font-size:0.75rem; padding:4px 6px;">
+            <option value="">[ TODOS ]</option>
+            {% for c in opt_canales %}
+            <option value="{{ c }}" {% if canal_filter == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="font-family:'Fira Code',monospace; font-size:0.68rem; color:var(--dim); display:block; margin-bottom:4px;">Local / Tienda</label>
+          <select name="tienda" style="width:100%; box-sizing:border-box; background:#030d03; border:1px solid rgba(0,255,65,0.3); color:var(--neon); font-family:'Fira Code',monospace; font-size:0.75rem; padding:4px 6px;">
+            <option value="">[ TODOS ]</option>
+            {% for t in opt_tiendas %}
+            <option value="{{ t }}" {% if tienda_filter == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label style="font-family:'Fira Code',monospace; font-size:0.68rem; color:var(--dim); display:block; margin-bottom:4px;">Segmento Cliente</label>
+          <select name="segmento" style="width:100%; box-sizing:border-box; background:#030d03; border:1px solid rgba(0,255,65,0.3); color:var(--neon); font-family:'Fira Code',monospace; font-size:0.75rem; padding:4px 6px;">
+            <option value="">[ TODOS ]</option>
+            {% for s in opt_segmentos %}
+            <option value="{{ s }}" {% if segmento_filter == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button type="submit" style="flex:1; padding:6px; background:#030d03; border:1px solid var(--neon); color:var(--neon); font-family:'Fira Code',monospace; font-size:0.75rem; cursor:pointer; font-weight:600;">[ FILTRAR ]</button>
+          <a href="/analytics/dashboard/" style="text-align:center; padding:6px 12px; border:1px solid var(--border); color:var(--dim); font-size:0.75rem; font-family:'Fira Code',monospace; text-decoration:none;">[ RESET ]</a>
+        </div>
+      </form>
+      
+      <!-- Botones para exportar con filtros actuales -->
+      <div style="margin-top:15px; display:flex; justify-content: flex-end; gap:10px; border-top:1px dashed rgba(0,255,65,0.1); padding-top:12px; align-items:center; flex-wrap:wrap;">
+        <span style="font-family:'Fira Code',monospace; font-size:0.7rem; color:var(--dim); margin-right:auto;">Coincidencias: {{ count_results|default:"0" }} / {{ total_ventas_db|default:"0" }} transacciones</span>
+        
+        <!-- Reporte PDF por defecto (sin filtros) -->
+        <a href="/analytics/export/pdf/" style="font-family:'Fira Code',monospace; font-size:0.7rem; color:var(--dim); text-decoration:none; border:1px solid var(--border); padding:5px 12px; transition:all 0.2s;"
+           onmouseover="this.style.borderColor='var(--neon)';this.style.color='var(--neon)'"
+           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">[ PDF CONSOLIDADO GENERAL ]</a>
+
+        <!-- Reporte PDF personalizado (con filtros actuales) -->
+        <a href="/analytics/export/pdf/?start_date={{ start_date|default:'2026-04-01' }}&end_date={{ end_date|default:'2026-04-10' }}&canal={{ canal_filter|default:'' }}&tienda={{ tienda_filter|default:'' }}&segmento={{ segmento_filter|default:'' }}" 
+           style="font-family:'Fira Code',monospace; font-size:0.7rem; color:var(--neon); text-decoration:none; border:1px solid var(--neon); padding:5px 12px; transition:all 0.2s; box-shadow: 0 0 6px rgba(0,255,65,0.15);"
+           onmouseover="this.style.background='rgba(0,255,65,0.1)'"
+           onmouseout="this.style.background='transparent'">[ EXPORTAR PDF FILTRADO ]</a>
+      </div>
+    </div>
+
     <!-- STAT CARDS -->
-    <div class="stat-grid">
+    <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
       <div class="stat-card">
         <div class="stat-label">// Total Transacciones</div>
         <div class="stat-value">{{ total_tx|default:"0" }}</div>
-        <div class="stat-sub">Registros en fact_events</div>
+        <div class="stat-sub">Registros en fact_ventas</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">// Ingresos Totales</div>
         <div class="stat-value" style="font-size:1.2rem;">{{ ingresos_totales|default:"$0" }}</div>
-        <div class="stat-sub">Suma volumen CLP</div>
+        <div class="stat-sub">Suma total CLP</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">// Ticket Promedio</div>
+        <div class="stat-value" style="font-size:1.2rem;">{{ promedio_tx|default:"$0" }}</div>
+        <div class="stat-sub">Promedio por transacción</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">// Clientes Únicos</div>
         <div class="stat-value">{{ clientes_unicos|default:"0" }}</div>
-        <div class="stat-sub">IDs distintos</div>
+        <div class="stat-sub">IDs en dim_cliente</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">// Canales Activos</div>
@@ -271,7 +345,7 @@
     <!-- KPI 3: TENDENCIA (FULL WIDTH) -->
     <div class="chart-panel" style="margin-bottom:20px;">
       <div class="chart-title">// KPI 3 — Tendencia Cronológica de Ingresos</div>
-      <div class="chart-subtitle">Flujo de ingresos por hora · últimas 24 entradas procesadas</div>
+      <div class="chart-subtitle">Flujo de ingresos y transacciones por día del Data Warehouse</div>
       <div class="chart-wrapper" style="height:200px;">
         <canvas id="chartTendencia"></canvas>
       </div>
@@ -334,8 +408,69 @@
           {% endfor %}
         </div>
         {% endif %}
-      </div>
+    </div>
+  </div>
 
+  <!-- SECCIÓN DE PRODUCTOS Y CATEGORÍAS -->
+  <div class="chart-grid" style="margin-top: 20px;">
+    <!-- KPI 4: TOP 10 PRODUCTOS -->
+    <div class="chart-panel">
+      <div class="chart-title">// KPI 4 — Top 10 Productos Más Vendidos</div>
+      <div class="chart-subtitle">Volumen total de ventas acumulado por producto (CLP)</div>
+      <div class="chart-wrapper" style="height:240px;">
+        <canvas id="chartProductos"></canvas>
+      </div>
+    </div>
+
+    <!-- KPI 5: VENTAS POR CATEGORÍA -->
+    <div class="chart-panel">
+      <div class="chart-title">// KPI 5 — Ventas por Categoría</div>
+      <div class="chart-subtitle">Ingresos acumulados por categoría de producto</div>
+      <div class="chart-wrapper" style="height:240px;">
+        <canvas id="chartCategorias"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIÓN DE LOCALIZACIÓN Y SEGMENTOS -->
+  <div class="chart-grid" style="margin-top: 20px;">
+    <!-- KPI 6: VENTAS POR TIENDA (GEOGRAFÍA) -->
+    <div class="chart-panel">
+      <div class="chart-title">// KPI 6 — Ventas por Local comercial (Geografía)</div>
+      <div class="chart-subtitle">Desempeño comercial por tienda y región</div>
+      <div class="chart-wrapper" style="height:240px;">
+        <canvas id="chartTiendas"></canvas>
+      </div>
+    </div>
+
+    <!-- KPI 7: VENTAS POR SEGMENTO DE CLIENTE -->
+    <div class="chart-panel">
+      <div class="chart-title">// KPI 7 — Ventas por Segmento de Cliente</div>
+      <div class="chart-subtitle">Distribución de ingresos según perfil de cliente CRM</div>
+      <div class="chart-wrapper" style="height:240px;">
+        <canvas id="chartSegmentos"></canvas>
+      </div>
+    </div>
+  </div>
+    <div class="chart-panel" style="margin-top: 24px; min-height: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <div class="chart-title">// Exploradores de Bases de Datos (Integración Directa)</div>
+          <div class="chart-subtitle">Acceso visual en vivo a los motores relacionales y NoSQL contenerizados</div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="switchTab('postgres')" id="btn-tab-postgres" style="font-family:'Fira Code',monospace; font-size:0.75rem; color:var(--neon); background:var(--panel); border:1px solid var(--neon); padding:6px 12px; cursor:pointer; font-weight:600; text-shadow: 0 0 8px var(--neon);">[POSTGRESQL - ADMINER]</button>
+          <button onclick="switchTab('mongo')" id="btn-tab-mongo" style="font-family:'Fira Code',monospace; font-size:0.75rem; color:var(--dim); background:var(--panel); border:1px solid var(--border); padding:6px 12px; cursor:pointer;">[MONGODB - EXPRESS]</button>
+        </div>
+      </div>
+      
+      <div id="wrapper-postgres" style="height: 480px; border: 1px solid var(--border);">
+        <iframe src="http://localhost:8085/" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
+      
+      <div id="wrapper-mongo" style="height: 480px; border: 1px solid var(--border); display: none;">
+        <iframe src="http://localhost:8086/" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
     </div>
   </main>
 
@@ -498,6 +633,161 @@
           }
         }
       });
+    }
+
+    // ---- KPI 4: BARRAS PRODUCTOS ----
+    const productosData = {{ top_productos_json|safe }};
+    if (productosData.length > 0) {
+      new Chart(document.getElementById('chartProductos'), {
+        type: 'bar',
+        data: {
+          labels: productosData.map(d => d.label.length > 18 ? d.label.slice(0, 15) + '...' : d.label),
+          datasets: [{
+            label: 'Volumen CLP',
+            data: productosData.map(d => d.value),
+            backgroundColor: 'rgba(0, 255, 65, 0.6)',
+            borderColor: NEON,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const item = productosData[ctx.dataIndex];
+                  return `Total: $${ctx.raw.toLocaleString('es-CL')} (${item.qty} uds)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { color: '#3a5a3a', maxRotation: 45, minRotation: 45 } },
+            y: { grid: { color: 'rgba(0,255,65,0.05)' }, ticks: { color: '#3a5a3a', callback: v => `$${(v/1000).toFixed(0)}k` } }
+          }
+        }
+      });
+    }
+
+    // ---- KPI 5: DONUT CATEGORIAS ----
+    const categoriasData = {{ categorias_json|safe }};
+    if (categoriasData.length > 0) {
+      new Chart(document.getElementById('chartCategorias'), {
+        type: 'pie',
+        data: {
+          labels: categoriasData.map(d => d.label),
+          datasets: [{
+            data: categoriasData.map(d => d.value),
+            backgroundColor: [
+              'rgba(0, 255, 65, 0.8)',
+              'rgba(0, 204, 51, 0.6)',
+              'rgba(57, 255, 20, 0.4)'
+            ],
+            borderColor: [NEON, BLUE, NEON2],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#3a6a3a', padding: 8 } }
+          }
+        }
+      });
+    }
+
+    // ---- KPI 6: BARRAS TIENDAS ----
+    const tiendasData = {{ tiendas_json|safe }};
+    if (tiendasData.length > 0) {
+      new Chart(document.getElementById('chartTiendas'), {
+        type: 'bar',
+        data: {
+          labels: tiendasData.map(d => d.label),
+          datasets: [{
+            label: 'Ingresos CLP',
+            data: tiendasData.map(d => d.value),
+            backgroundColor: 'rgba(57, 255, 20, 0.6)',
+            borderColor: NEON2,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: '#3a5a3a', maxRotation: 45, minRotation: 45 } },
+            y: { grid: { color: 'rgba(0,255,65,0.05)' }, ticks: { color: '#3a5a3a', callback: v => `$${(v/1000).toFixed(0)}k` } }
+          }
+        }
+      });
+    }
+
+    // ---- KPI 7: DONUT SEGMENTOS ----
+    const segmentosData = {{ segmentos_json|safe }};
+    if (segmentosData.length > 0) {
+      new Chart(document.getElementById('chartSegmentos'), {
+        type: 'doughnut',
+        data: {
+          labels: segmentosData.map(d => d.label),
+          datasets: [{
+            data: segmentosData.map(d => d.value),
+            backgroundColor: [
+              'rgba(0, 255, 65, 0.75)',
+              'rgba(0, 204, 51, 0.55)',
+              'rgba(57, 255, 20, 0.35)'
+            ],
+            borderColor: [NEON, BLUE, NEON2],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#3a6a3a', padding: 8 } }
+          }
+        }
+      });
+    }
+
+    // ---- FUNCIÓN DE CAMBIO DE PESTAÑA PARA EXPLORADORES ----
+    function switchTab(tab) {
+      const pWrapper = document.getElementById('wrapper-postgres');
+      const mWrapper = document.getElementById('wrapper-mongo');
+      const pBtn = document.getElementById('btn-tab-postgres');
+      const mBtn = document.getElementById('btn-tab-mongo');
+      
+      const neon = '#00FF41';
+      const dim = '#3a5a3a';
+      const border = 'rgba(0,255,65,0.18)';
+      
+      if (tab === 'postgres') {
+        pWrapper.style.display = 'block';
+        mWrapper.style.display = 'none';
+        pBtn.style.color = neon;
+        pBtn.style.borderColor = neon;
+        pBtn.style.textShadow = '0 0 8px ' + neon;
+        
+        mBtn.style.color = dim;
+        mBtn.style.borderColor = border;
+        mBtn.style.textShadow = 'none';
+      } else {
+        pWrapper.style.display = 'none';
+        mWrapper.style.display = 'block';
+        mBtn.style.color = neon;
+        mBtn.style.borderColor = neon;
+        mBtn.style.textShadow = '0 0 8px ' + neon;
+        
+        pBtn.style.color = dim;
+        pBtn.style.borderColor = border;
+        pBtn.style.textShadow = 'none';
+      }
     }
   </script>
 </body>

@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+13,2026-04-02,103,2007,3,50000,Temuco

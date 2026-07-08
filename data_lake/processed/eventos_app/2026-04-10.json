@@ -1,0 +1,110 @@
+[
+    {
+        "id_evento": 118,
+        "id_cliente": 125,
+        "tipo": "click",
+        "producto": 2003
+    },
+    {
+        "id_evento": 119,
+        "id_cliente": 105,
+        "tipo": "compra",
+        "producto": 2006
+    },
+    {
+        "id_evento": 120,
+        "id_cliente": 102,
+        "tipo": "busqueda",
+        "producto": 2003
+    },
+    {
+        "id_evento": 121,
+        "id_cliente": 115,
+        "tipo": "busqueda",
+        "producto": 2014
+    },
+    {
+        "id_evento": 122,
+        "id_cliente": 120,
+        "tipo": "busqueda",
+        "producto": 2015
+    },
+    {
+        "id_evento": 123,
+        "id_cliente": 109,
+        "tipo": "compra",
+        "producto": 2007
+    },
+    {
+        "id_evento": 124,
+        "id_cliente": 104,
+        "tipo": "busqueda",
+        "producto": 2012
+    },
+    {
+        "id_evento": 125,
+        "id_cliente": 104,
+        "tipo": "compra",
+        "producto": 2010
+    },
+    {
+        "id_evento": 126,
+        "id_cliente": 122,
+        "tipo": "compra",
+        "producto": 2016
+    },
+    {
+        "id_evento": 127,
+        "id_cliente": 122,
+        "tipo": "click",
+        "producto": 2010
+    },
+    {
+        "id_evento": 128,
+        "id_cliente": 108,
+        "tipo": "compra",
+        "producto": 2013
+    },
+    {
+        "id_evento": 129,
+        "id_cliente": 102,
+        "tipo": "click",
+        "producto": 2001
+    },
+    {
+        "id_evento": 130,
+        "id_cliente": 110,
+        "tipo": "click",
+        "producto": 2007
+    },
+    {
+        "id_evento": 131,
+        "id_cliente": 125,
+        "tipo": "busqueda",
+        "producto": 2009
+    },
+    {
+        "id_evento": 132,
+        "id_cliente": 111,
+        "tipo": "click",
+        "producto": 2004
+    },
+    {
+        "id_evento": 133,
+        "id_cliente": 116,
+        "tipo": "click",
+        "producto": 2014
+    },
+    {
+        "id_evento": 134,
+        "id_cliente": 105,
+        "tipo": "compra",
+        "producto": 2013
+    },
+    {
+        "id_evento": 135,
+        "id_cliente": 123,
+        "tipo": "compra",
+        "producto": 2008
+    }
+]

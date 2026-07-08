@@ -1,0 +1,2 @@
+id_venta,fecha,id_cliente,id_producto,cantidad,precio_unitario,tienda
+5,2026-04-01,103,2007,3,50000,Las Condes
