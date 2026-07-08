@@ -1,15 +1,31 @@
 /* ============================================================
-   H0P3 Cyberpunk Skin for Adminer v4.0
-   Target: adminer:5.x — Dark terminal aesthetic
+   H0P3 Cyberpunk Skin for Adminer v5.0 — CSS Variables Override
+   Adminer usa: --bg, --fg, --dim, --lit como tokens base.
+   Sobreescribimos en :root y el resto cae en cascada.
    ============================================================ */
 
-/* ---- BASE ---- */
-* {
-    box-sizing: border-box;
+/* ---- REDEFINIR VARIABLES CORE DE ADMINER ---- */
+:root {
+    --bg:  #020a02;   /* era #fff  → fondo principal */
+    --fg:  #a0c8a0;   /* era #000  → texto principal */
+    --dim: #030d03;   /* era #eee  → paneles, sidebar, breadcrumb */
+    --lit: #031403;   /* era #ddf  → hover de filas, panel lateral activo */
 }
-body {
-    background: #020a02 !important;
-    color: #a0c8a0 !important;
+
+/* Adminer hardcodea este valor fuera de variables — override explícito */
+.odds tbody tr:nth-child(2n),
+.odds tbody tr:nth-child(2n) td,
+tbody tr:nth-child(even),
+tbody tr:nth-child(even) td {
+    background: #030d03 !important;
+    background-color: #030d03 !important;
+}
+
+
+/* ---- BASE ---- */
+html, body {
+    background: var(--bg) !important;
+    color: var(--fg) !important;
     font-family: 'Fira Code', monospace, sans-serif !important;
     margin: 0;
     padding: 10px;
@@ -17,77 +33,69 @@ body {
 
 /* ---- LAYOUT ---- */
 #menu {
-    background: #030d03 !important;
     border-right: 1px solid rgba(0, 255, 65, 0.2) !important;
     width: 250px !important;
 }
+/* Sidebar: nombres de tabla sin corte */
+#logins, #tables {
+    white-space: nowrap;
+    overflow: hidden;
+}
+#tables a, #logins a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
 #content {
-    background: #020a02 !important;
     margin-left: 270px !important;
 }
 
-/* ---- HEADERS — eliminar fondos claros de sección ---- */
-h1, h2, h3, h4, h5, legend {
+/* ---- HEADERS ---- */
+h1, h2, h3, h4, h5, h6 {
     color: #00FF41 !important;
-    text-shadow: 0 0 8px rgba(0, 255, 65, 0.5) !important;
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.4) !important;
     font-family: 'Fira Code', monospace !important;
-    background: transparent !important;
-    background-color: transparent !important;
     border: none !important;
-    padding: 6px 0 !important;
-    margin: 0 0 12px 0 !important;
 }
-/* Adminer renders h2 section headings with inline background — override */
-#content h2,
-#content h3,
-.content h2,
-.content h3,
-h2 {
-    background: transparent !important;
-    background-color: transparent !important;
+#content h2 {
     border-bottom: 1px solid rgba(0, 255, 65, 0.2) !important;
     padding-bottom: 6px !important;
-    color: #00FF41 !important;
 }
-h1 a, h2 a, h3 a {
-    color: #00FF41 !important;
-}
+h1 a, h2 a, h3 a { color: #00FF41 !important; }
 
 /* ---- LINKS ---- */
 a, a:link, a:visited {
     color: #00cc33 !important;
     text-decoration: none !important;
-    transition: all 0.2s ease;
 }
 a:hover {
     color: #39ff14 !important;
-    text-shadow: 0 0 8px #00FF41 !important;
+    text-shadow: 0 0 6px #00FF41 !important;
 }
 
 /* ---- TABLES ---- */
 table {
     border-collapse: collapse !important;
     border: 1px solid rgba(0, 255, 65, 0.2) !important;
-    background: #030d03 !important;
     width: 100% !important;
 }
-th, td {
+th {
+    color: #00FF41 !important;
+    font-family: 'Fira Code', monospace !important;
+    border: 1px solid rgba(0, 255, 65, 0.15) !important;
+    padding: 8px 10px !important;
+}
+td {
     border: 1px solid rgba(0, 255, 65, 0.1) !important;
     padding: 8px 10px !important;
     font-size: 0.8rem !important;
+    color: var(--fg) !important;
 }
-th {
-    background: #031403 !important;
-    color: #00FF41 !important;
-    font-weight: bold !important;
-    text-align: left !important;
-}
-tr:hover td {
-    background: rgba(0, 255, 65, 0.05) !important;
-}
+tr:hover td { background: rgba(0, 255, 65, 0.05) !important; }
 
 /* ---- FORMS ---- */
-input, select, textarea {
+input:not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]),
+select, textarea {
     background: #030d03 !important;
     border: 1px solid rgba(0, 255, 65, 0.3) !important;
     color: #00FF41 !important;
@@ -95,61 +103,72 @@ input, select, textarea {
     font-family: 'Fira Code', monospace !important;
     font-size: 0.8rem !important;
 }
+textarea {
+    width: 100% !important;
+    padding: 8px !important;
+    font-size: 0.85rem !important;
+}
 input:focus, select:focus, textarea:focus {
     border-color: #00FF41 !important;
     outline: none !important;
     box-shadow: 0 0 8px rgba(0, 255, 65, 0.3) !important;
 }
+
+/* ---- BUTTONS ---- */
 input[type="submit"], input[type="button"], button, .button {
     background: #030d03 !important;
     color: #00FF41 !important;
     border: 1px solid #00FF41 !important;
     padding: 5px 12px !important;
     cursor: pointer !important;
+    font-family: 'Fira Code', monospace !important;
     font-weight: 600 !important;
     transition: all 0.2s ease !important;
 }
-input[type="submit"]:hover, input[type="button"]:hover, button:hover, .button:hover {
+input[type="submit"]:hover, button:hover, .button:hover {
     background: rgba(0, 255, 65, 0.1) !important;
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5) !important;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4) !important;
+}
+
+/* ---- FIELDSETS — "Selected", "Mover" ---- */
+fieldset {
+    border: 1px solid rgba(0, 255, 65, 0.25) !important;
+    padding: 12px !important;
+    margin: 8px 4px !important;
+    border-radius: 0 !important;
+}
+legend {
+    color: #00cc33 !important;
+    font-size: 0.75rem !important;
+    padding: 0 6px !important;
 }
 
 /* ---- MESSAGES ---- */
 .error {
-    background: rgba(255, 60, 60, 0.05) !important;
+    color: #ff6666 !important;
     border: 1px solid #ff4444 !important;
-    color: #ff4444 !important;
-    padding: 10px !important;
-    margin-bottom: 15px !important;
+    padding: 8px !important;
 }
 .message {
-    background: rgba(0, 255, 65, 0.05) !important;
-    border: 1px solid #00FF41 !important;
     color: #00FF41 !important;
-    padding: 10px !important;
-    margin-bottom: 15px !important;
+    border: 1px solid #00FF41 !important;
+    padding: 8px !important;
 }
-.active {
-    color: #39ff14 !important;
-    font-weight: bold !important;
+.active { color: #39ff14 !important; font-weight: bold !important; }
+
+/* ---- JUSH syntax highlighter en SQL editor ---- */
+.jush {
+    --bg-color: #030d03;
+    --text-color: #a0c8a0;
 }
 
-/* ---- LOGIN PANEL ---- */
+/* ---- LOGIN ---- */
 #login {
-    background: #030d03 !important;
     border: 1px solid rgba(0, 255, 65, 0.3) !important;
     padding: 25px !important;
     margin: 80px auto !important;
     max-width: 420px !important;
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.15) !important;
-}
-#login table {
-    border: none !important;
-    background: transparent !important;
-}
-#login td {
-    background: transparent !important;
-    border: none !important;
 }
 
 /* ---- SCROLLBARS ---- */
